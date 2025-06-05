@@ -1,19 +1,20 @@
-'From Cuis7.3 [latest update: #6897] on 7 December 2024 at 12:32:38 pm'!
+'From Cuis7.5 [latest update: #7259] on 5 June 2025 at 11:37:20 am'!
 'Description '!
-!provides: 'Unicode' 1 68!
+!provides: 'Unicode' 1 1!
+!requires: 'Cuis-Base' 75 7259 nil!
 SystemOrganization addCategory: #Unicode!
 SystemOrganization addCategory: #'Unicode-Public'!
 SystemOrganization addCategory: #'Unicode-Tests'!
 
 
-!classDefinition: #CodePointArray category: #'Unicode-Public'!
-WordArray variableWordSubclass: #CodePointArray
+!classDefinition: #CodepointArray category: #'Unicode-Public'!
+WordArray variableWordSubclass: #CodepointArray
 	instanceVariableNames: ''
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Unicode-Public'!
-!classDefinition: 'CodePointArray class' category: #'Unicode-Public'!
-CodePointArray class
+!classDefinition: 'CodepointArray class' category: #'Unicode-Public'!
+CodepointArray class
 	instanceVariableNames: ''!
 
 !classDefinition: #UnicodeLookup category: #'Unicode-Public'!
@@ -76,14 +77,14 @@ TestCase subclass: #UnicodeDataTests
 UnicodeDataTests class
 	instanceVariableNames: ''!
 
-!classDefinition: #CodePoint category: #'Unicode-Public'!
-Object subclass: #CodePoint
+!classDefinition: #Codepoint category: #'Unicode-Public'!
+Object subclass: #Codepoint
 	instanceVariableNames: ''
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Unicode-Public'!
-!classDefinition: 'CodePoint class' category: #'Unicode-Public'!
-CodePoint class
+!classDefinition: 'Codepoint class' category: #'Unicode-Public'!
+Codepoint class
 	instanceVariableNames: ''!
 
 !classDefinition: #CodepointMappings category: #'Unicode-Public'!
@@ -116,14 +117,14 @@ Object subclass: #LookupCache
 LookupCache class
 	instanceVariableNames: ''!
 
-!classDefinition: #LRUCache category: #'Unicode-Public'!
-LookupCache subclass: #LRUCache
+!classDefinition: #LeastRecentlyUsedCache category: #'Unicode-Public'!
+LookupCache subclass: #LeastRecentlyUsedCache
 	instanceVariableNames: 'cache maxSize'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Unicode-Public'!
-!classDefinition: 'LRUCache class' category: #'Unicode-Public'!
-LRUCache class
+!classDefinition: 'LeastRecentlyUsedCache class' category: #'Unicode-Public'!
+LeastRecentlyUsedCache class
 	instanceVariableNames: ''!
 
 !classDefinition: #PackageData category: #'Unicode-Public'!
@@ -221,7 +222,7 @@ Store a set of Unicode codepoints
 
 Leverages UnicodeLookup to store small bitmaps in the leaves of a prefix tree, minimizing storage.!
 
-!CodePoint commentStamp: '<historical>' prior: 0!
+!Codepoint commentStamp: '<historical>' prior: 0!
 Validate code points and convert between different representations!
 
 !PackageData commentStamp: '<historical>' prior: 0!
@@ -242,147 +243,142 @@ Provide access to the data in 'UnicodeData.txt' as published in the Unicode stan
 
 Reference: https://www.unicode.org/reports/tr44/#UnicodeData.txt!
 
-!CodePointArray methodsFor: 'as yet unclassified' stamp: 'ess 11/20/2024 18:23:48'!
+!CodepointArray methodsFor: 'as yet unclassified' stamp: 'ess 11/20/2024 18:23:48'!
 asCanonicallyOrdered
 
 	^ self copy
 		beCanonicallyOrdered;
 		yourself! !
 
-!CodePointArray methodsFor: 'as yet unclassified' stamp: 'ess 11/20/2024 23:13:52'!
+!CodepointArray methodsFor: 'as yet unclassified' stamp: 'ess 11/20/2024 23:13:52'!
 asString
 
 	^ UnicodeString fromCodePoints: self! !
 
-!CodePointArray methodsFor: 'as yet unclassified' stamp: 'ess 11/20/2024 20:48:53'!
+!CodepointArray methodsFor: 'as yet unclassified' stamp: 'ess 6/4/2025 15:15:14'!
 beCanonicallyOrdered
-	"Canonical Ordering Algorithm
-
-	Codepoints with a combining class of 0 ('starters') are fenceposts.  Within each run of fence, *stably* sort the remaining codepoints in ascending order by class.  Don't move the posts, and don't move anything past a post.
-
+	"Canonical Ordering Algorithm"
+	"Codepoints with a combining class of 0 ('starters') are fenceposts.  Within each run of fence, _stably_ sort the remaining codepoints in ascending order by class.  Don't move the posts, and don't move anything past a post.
 	Simple decompositions as given in UnicodeData.txt are already in order, but recursive ('full') decompositions may require sorting."
 
 	| combiningClasses didSwap |
-
-	self size <= 1 ifTrue: [ ^ self ].
-
+	self size <= 1 ifTrue: [
+		^ self ].
 	combiningClasses := self collect: [ :each | Unicode canonicalCombiningClassAt: each ].
-	(combiningClasses allSatisfy: #isZero) ifTrue: [ ^ self ].
-
+	(combiningClasses allSatisfy: #isZero) ifTrue: [
+		^ self ].
 	didSwap := true.  "It's basically a bubble-sort"
-	[ didSwap ] whileTrue:
-		[ didSwap := false.
-		2 to: combiningClasses size do:
-			[ :i | | leftClass rightClass |
+	[ didSwap ] whileTrue: [
+		didSwap := false.
+		2 to: combiningClasses size do: [ :i |
+			| leftClass rightClass |
 			leftClass := combiningClasses at: i - 1.
 			rightClass := combiningClasses at: i.
-			(leftClass > rightClass and: [ rightClass > 0 ])
-				ifTrue: [ self swap: i - 1 with: i.
-						combiningClasses swap: i - 1 with: i.
-						didSwap := true  ] ] ].
-	^ self! !
+			(leftClass > rightClass and: [ rightClass > 0 ]) ifTrue: [
+				self swap: i - 1 with: i.
+				combiningClasses swap: i - 1 with: i.
+				didSwap := true  ] ] ]! !
 
-!CodePointArray class methodsFor: 'instance creation' stamp: 'ess 11/20/2024 21:16:44'!
+!CodepointArray class methodsFor: 'instance creation' stamp: 'ess 11/20/2024 21:16:44'!
 fromString: aString
 
 	^ self newFrom: aString asCodePoints! !
 
-!UnicodeLookup methodsFor: 'accessing' stamp: 'ess 12/7/2024 08:31:44'!
-at: aCodePoint
+!UnicodeLookup methodsFor: 'accessing' stamp: 'ess 4/3/2025 06:56:22'!
+at: aCodepoint
 
-	^self
-		coordinatesFor: aCodePoint
-		do: [:key1 :key2 :key3 |
+	^ self
+		coordinatesFor: aCodepoint
+		do: [ :key1 :key2 :key3 |
 			(self
 				blockAt: key1
 				at: key2)
-					ifNotNil: [:block | block at: key3]]! !
+					ifNotNil: [ :block |
+						block at: key3 ] ]! !
 
-!UnicodeLookup methodsFor: 'accessing' stamp: 'ess 12/7/2024 07:12:56'!
-at: codePoint put: aValue
+!UnicodeLookup methodsFor: 'accessing' stamp: 'ess 4/3/2025 06:56:43'!
+at: aCodepoint put: aValue
 
-	^self
-		coordinatesFor: codePoint
-		do: [:key1 :key2 :key3 |
+	^ self
+		coordinatesFor: aCodepoint
+		do: [ :key1 :key2 :key3 |
 			(self
 				ensuringBlockAt: key1
 				at: key2)
 					at: key3
-					put: aValue]! !
+					put: aValue ]! !
 
-!UnicodeLookup methodsFor: 'accessing' stamp: 'ess 12/7/2024 07:25:09'!
+!UnicodeLookup methodsFor: 'accessing' stamp: 'ess 4/3/2025 07:56:49'!
 size
 
 	| size |
 	size := 0.
-	self blocksDo: [:each :planeIndex :blockIndex | size := size + (self blockSize: each)].
-	^size! !
+	self blocksDo: [ :each :planeIndex :blockIndex |
+		size := size + (self blockSize: each) ].
+	^ size! !
 
 !UnicodeLookup methodsFor: 'converting' stamp: 'ess 11/11/2024 07:10:48'!
 shrinkToFit
 
 	planes := self shrinkPlanes! !
 
-!UnicodeLookup methodsFor: 'copying' stamp: 'ess 12/7/2024 09:15:09'!
+!UnicodeLookup methodsFor: 'copying' stamp: 'ess 4/3/2025 07:54:50'!
 postCopy
 
 	self shrinkPlanes.
-	^self! !
+	^ self! !
 
-!UnicodeLookup methodsFor: 'enumerating' stamp: 'ess 12/7/2024 07:14:57'!
+!UnicodeLookup methodsFor: 'enumerating' stamp: 'ess 4/3/2025 07:53:14'!
 do: aUnaryBlock
 
-	^self withIndexDo: [:data :codePoint | aUnaryBlock value: data]! !
+	^ self withIndexDo: [ :data :codepoint |
+		aUnaryBlock value: data]! !
 
-!UnicodeLookup methodsFor: 'enumerating' stamp: 'ess 12/7/2024 07:19:18'!
+!UnicodeLookup methodsFor: 'enumerating' stamp: 'ess 4/3/2025 07:54:14'!
 keysAndValuesDo: aBinaryBlock
 
-	^self withIndexDo:
-		[:value :codePoint |
+	^ self withIndexDo: [ :value :codePoint |
 		aBinaryBlock
 			value: codePoint
-			value: value]! !
+			value: value ]! !
 
-!UnicodeLookup methodsFor: 'enumerating' stamp: 'ess 12/7/2024 07:19:24'!
+!UnicodeLookup methodsFor: 'enumerating' stamp: 'ess 4/3/2025 07:54:29'!
 keysDo: aUnaryBlock
 
-	^self withIndexDo: [:value :codePoint | aUnaryBlock value: codePoint]! !
+	^ self withIndexDo: [ :value :codepoint |
+		aUnaryBlock value: codepoint]! !
 
-!UnicodeLookup methodsFor: 'enumerating' stamp: 'ess 12/7/2024 08:34:47'!
+!UnicodeLookup methodsFor: 'enumerating' stamp: 'ess 4/3/2025 07:55:29'!
 selectBitmap: aClosure
 
 	| selected |
 	selected := UnicodeBitmap new.
-	self blocksDo:
-		[:block :planeIndex :blockIndex |
-		block withIndexDo:
-			[:data :byteIndex |
-			data ifNotNil:
-				[| codePoint |
-				codePoint := CodePoint
+	self blocksDo: [ :block :planeIndex :blockIndex |
+		block withIndexDo: [ :data :byteIndex |
+			data ifNotNil: [
+				| codePoint |
+				codePoint := Codepoint
 					atPlane: planeIndex
 					block: blockIndex
 					byte: byteIndex.
-				(aClosure valueWithPossibleArgs: {data. codePoint}) ifTrue:
-					[selected add: codePoint]]]].
-	^selected! !
+				(aClosure valueWithPossibleArgs: {data. codePoint}) ifTrue: [
+					selected add: codePoint ] ] ] ].
+	^ selected! !
 
-!UnicodeLookup methodsFor: 'enumerating' stamp: 'ess 12/7/2024 08:31:10'!
+!UnicodeLookup methodsFor: 'enumerating' stamp: 'ess 4/3/2025 07:57:16'!
 withIndexDo: aBinaryBlock
 
-	^self blocksDo:
-		[:block :planeIndex :blockIndex |
-		block withIndexDo:
-			[:data :byteIndex |
-			data ifNotNil:
-				[| codePoint |
-				codePoint := CodePoint
+	^ self blocksDo: [ :block :planeIndex :blockIndex |
+		block withIndexDo: [ :data :byteIndex |
+			data ifNotNil: [
+				| codePoint |
+				codePoint := Codepoint
 					atPlane: planeIndex
 					block: blockIndex
 					byte: byteIndex.
 				aBinaryBlock
 					value: data
-					value: codePoint]]]! !
+					value: codePoint ] ] ]! !
 
 !UnicodeLookup methodsFor: 'initialization' stamp: 'ess 12/7/2024 07:16:08'!
 initialize
@@ -391,156 +387,158 @@ initialize
 		new: 17
 		withAll: nil! !
 
-!UnicodeLookup methodsFor: 'private' stamp: 'ess 12/7/2024 07:19:43'!
+!UnicodeLookup methodsFor: 'private' stamp: 'ess 4/3/2025 07:54:35'!
 newBlock
 
-	^Array new: 256! !
+	^ Array new: 256! !
 
-!UnicodeLookup methodsFor: 'private' stamp: 'ess 12/7/2024 07:19:36'!
+!UnicodeLookup methodsFor: 'private' stamp: 'ess 4/3/2025 07:54:41'!
 newPlane
 
-	^Array new: 256! !
+	^ Array new: 256! !
 
-!UnicodeLookup methodsFor: 'private' stamp: 'ess 12/7/2024 07:23:39'!
+!UnicodeLookup methodsFor: 'private' stamp: 'ess 6/4/2025 15:23:18'!
 shrinkArray: anArray
 
 	| runArray |
-	anArray ifNil: [^nil].
+	anArray ifNil: [
+		^ nil ].
 	runArray := RunArray newFrom: anArray.
 	^runArray values size < (anArray size // 2)
-		ifTrue: [runArray]
-		ifFalse: [anArray]! !
+		ifTrue: [ runArray ]
+		ifFalse: [ anArray ]! !
 
-!UnicodeLookup methodsFor: 'private' stamp: 'ess 12/7/2024 07:23:45'!
+!UnicodeLookup methodsFor: 'private' stamp: 'ess 4/3/2025 07:55:55'!
 shrinkBlock: blockArray
 
-	^self shrinkArray: blockArray! !
+	^ self shrinkArray: blockArray! !
 
-!UnicodeLookup methodsFor: 'private' stamp: 'ess 12/7/2024 07:24:22'!
+!UnicodeLookup methodsFor: 'private' stamp: 'ess 6/4/2025 15:23:31'!
 shrinkPlane: planeArray
 
-	planeArray ifNil: [^nil].
-	^self shrinkArray: (planeArray collect: [:each | self shrinkBlock: each])! !
+	planeArray ifNil: [
+		^ nil ].
+	^ self shrinkArray:
+		(planeArray collect: [ :each | self shrinkBlock: each ])! !
 
-!UnicodeLookup methodsFor: 'private' stamp: 'ess 12/7/2024 07:24:37'!
+!UnicodeLookup methodsFor: 'private' stamp: 'ess 4/3/2025 07:56:40'!
 shrinkPlanes
 
 	| newPlanes |
 	newPlanes := RunArray new.
-	planes do: [:each | newPlanes addLast: (self shrinkPlane: each)].
-	^newPlanes! !
+	planes do: [ :each |
+		newPlanes addLast: (self shrinkPlane: each) ].
+	^ newPlanes! !
 
-!UnicodeLookup methodsFor: 'private-accessing' stamp: 'ess 12/7/2024 07:12:25'!
+!UnicodeLookup methodsFor: 'private-accessing' stamp: 'ess 4/3/2025 08:11:18'!
 blockAt: planeIndex at: blockIndex
 
-	^(self planeAt: planeIndex)
-		ifNotNil: [:plane | plane at: blockIndex]! !
+	^ (self planeAt: planeIndex)
+		ifNotNil: [ :plane | plane at: blockIndex ]! !
 
-!UnicodeLookup methodsFor: 'private-accessing' stamp: 'ess 12/7/2024 07:13:26'!
+!UnicodeLookup methodsFor: 'private-accessing' stamp: 'ess 4/3/2025 07:51:13'!
 blockSize: aBlock
 
-	^aBlock
-		ifNotNil: [aBlock count: #notNil]
-		ifNil: [0]! !
+	^ aBlock
+		ifNotNil: [ aBlock count: #notNil ]
+		ifNil: [ 0 ]! !
 
-!UnicodeLookup methodsFor: 'private-accessing' stamp: 'ess 12/7/2024 08:32:19'!
+!UnicodeLookup methodsFor: 'private-accessing' stamp: 'ess 4/3/2025 07:51:20'!
 coordinatesFor: aCodePoint do: aTernaryBlock
 
-	^CodePoint
+	^ Codepoint
 		coordinatesFor: aCodePoint
 		do: aTernaryBlock! !
 
-!UnicodeLookup methodsFor: 'private-accessing' stamp: 'ess 12/7/2024 07:15:45'!
+!UnicodeLookup methodsFor: 'private-accessing' stamp: 'ess 4/3/2025 07:51:39'!
 ensuringBlockAt: planeIndex at: blockIndex
 
 	| plane |
 	plane := self ensuringPlaneAt: planeIndex.
-	^(plane at: blockIndex)
-		ifNil: [plane
-				at: blockIndex
-				put: self newBlock]! !
+	^ (plane at: blockIndex) ifNil: [
+		plane
+			at: blockIndex
+			put: self newBlock ]! !
 
-!UnicodeLookup methodsFor: 'private-accessing' stamp: 'ess 12/7/2024 07:08:46'!
+!UnicodeLookup methodsFor: 'private-accessing' stamp: 'ess 4/3/2025 07:53:34'!
 ensuringPlaneAt: planeIndex
 
-	^(planes at: planeIndex)
-		ifNil: [| newPlane |
-			newPlane := self newPlane.
-			planes := planes
-				copyReplaceFrom: planeIndex
-				to: planeIndex
-				with: {newPlane}.
-			^newPlane]! !
+	^ (planes at: planeIndex) ifNil: [
+		| newPlane |
+		newPlane := self newPlane.
+		planes := planes
+			copyReplaceFrom: planeIndex
+			to: planeIndex
+			with: {newPlane}.
+		newPlane ]! !
 
-!UnicodeLookup methodsFor: 'private-accessing' stamp: 'ess 12/7/2024 07:19:51'!
+!UnicodeLookup methodsFor: 'private-accessing' stamp: 'ess 4/3/2025 07:52:07'!
 planeAt: planeIndex
 
-	^planes at: planeIndex! !
+	^ planes at: planeIndex! !
 
-!UnicodeLookup methodsFor: 'private-enumerating' stamp: 'ess 12/7/2024 07:07:31'!
+!UnicodeLookup methodsFor: 'private-enumerating' stamp: 'ess 6/4/2025 15:22:42'!
 blocksDo: aClosure
 
-	^planes withIndexDo:
-		[:plane :planeIndex |
-		plane ifNotNil:
-			[plane withIndexDo:
-				[:block :blockIndex |
-				block ifNotNil:
-					[aClosure
-						value: block
+	^ planes withIndexDo: [ :eachPlane :planeIndex |
+		eachPlane ifNotNil: [
+			eachPlane withIndexDo: [ :eachBlock :blockIndex |
+				eachBlock ifNotNil: [
+					aClosure
+						value: eachBlock
 						value: planeIndex
-						value: blockIndex]]]]! !
+						value: blockIndex ] ] ] ]! !
 
-!UnicodeLookup class methodsFor: 'instance creation' stamp: 'ess 11/11/2024 06:25:55'!
+!UnicodeLookup class methodsFor: 'instance creation' stamp: 'ess 4/3/2025 06:55:47'!
 building: aUnaryBlock
 
-	| table |
-	
+	| table |	
 	table := self new.
 	aUnaryBlock value: table.
 	table shrinkToFit.
 	^ table! !
 
-!UnicodeBitmap methodsFor: 'accessing' stamp: 'ess 12/7/2024 10:45:32'!
-add: aCodePoint
+!UnicodeBitmap methodsFor: 'accessing' stamp: 'ess 4/3/2025 07:58:01'!
+add: aCodepoint
 
 	self
-		bitAt: aCodePoint
+		bitAt: aCodepoint
 		put: 1! !
 
-!UnicodeBitmap methodsFor: 'accessing' stamp: 'ess 12/7/2024 10:42:37'!
+!UnicodeBitmap methodsFor: 'accessing' stamp: 'ess 4/3/2025 07:58:12'!
 addAll: aCollection
 
-	aCollection do: [:each | self add: each]! !
+	aCollection do: [ :each |
+		self add: each ]! !
 
-!UnicodeBitmap methodsFor: 'accessing' stamp: 'ess 12/7/2024 10:44:45'!
-bitAt: aCodePoint
+!UnicodeBitmap methodsFor: 'accessing' stamp: 'ess 4/3/2025 07:58:37'!
+bitAt: aCodepoint
 
-	^self
-		coordinatesFor: aCodePoint
-		do: [:planeIndex :blockIndex :byteIndex |
+	^ self
+		coordinatesFor: aCodepoint
+		do: [ :planeIndex :blockIndex :byteIndex |
 			(self
 				blockAt: planeIndex
 				at: blockIndex)
-					ifNotNil: [:block | block bitAt: byteIndex]
-					ifNil: [0]]! !
+					ifNotNil: [ :block | block bitAt: byteIndex ]
+					ifNil: [ 0 ] ]! !
 
-!UnicodeBitmap methodsFor: 'accessing' stamp: 'ess 12/7/2024 10:44:52'!
-bitAt: aCodePoint put: aValue
+!UnicodeBitmap methodsFor: 'accessing' stamp: 'ess 4/3/2025 07:58:54'!
+bitAt: aCodepoint put: aValue
 
-	^self
-		coordinatesFor: aCodePoint
-		do: [:planeIndex :blockIndex :byteIndex |
+	^ self
+		coordinatesFor: aCodepoint
+		do: [ :planeIndex :blockIndex :byteIndex |
 			(self
 				ensuringBlockAt: planeIndex
 				at: blockIndex)
 					bitAt: byteIndex
-					put: aValue]! !
+					put: aValue ]! !
 
-!UnicodeBitmap methodsFor: 'accessing' stamp: 'ess 12/7/2024 10:48:52'!
+!UnicodeBitmap methodsFor: 'accessing' stamp: 'ess 4/3/2025 08:00:26'!
 includes: aCodePoint
 
-	^(self bitAt: aCodePoint) ~= 0! !
+	^ (self bitAt: aCodePoint) ~= 0! !
 
 !UnicodeBitmap methodsFor: 'accessing' stamp: 'ess 12/7/2024 10:49:03'!
 remove: aCodePoint
@@ -549,156 +547,148 @@ remove: aCodePoint
 		bitAt: aCodePoint
 		put: 0! !
 
-!UnicodeBitmap methodsFor: 'accessing' stamp: 'ess 12/7/2024 10:49:14'!
+!UnicodeBitmap methodsFor: 'accessing' stamp: 'ess 4/3/2025 08:02:49'!
 removeAll: aCollection
 
-	^aCollection do: [:each | self remove: each]! !
+	^ aCollection do: [ :each |
+		self remove: each ]! !
 
-!UnicodeBitmap methodsFor: 'enumerating' stamp: 'ess 12/7/2024 10:49:58'!
+!UnicodeBitmap methodsFor: 'enumerating' stamp: 'ess 4/3/2025 08:00:19'!
 do: aBlockClosure
 
-	^self blocksDo:
-		[:eachBlock :planeIndex :blockIndex |
-		eachBlock withIndexDo:
-			[:eachByte :index |
-			eachByte = 0 ifFalse:
-				[1 to: 8 do:
-					[:bitIndex |
-					(eachByte bitAt: bitIndex) = 0 ifFalse:
-						[| byteIndex codePoint |
+	^ self blocksDo: [ :eachBlock :planeIndex :blockIndex |
+		eachBlock withIndexDo: [ :eachByte :index |
+			eachByte = 0 ifFalse: [
+				1 to: 8 do: [ :bitIndex |
+					(eachByte bitAt: bitIndex) = 0 ifFalse: [
+						| byteIndex codePoint |
 						byteIndex := (index - 1) * 8 + bitIndex.
-						codePoint := CodePoint
+						codePoint := Codepoint
 							atPlane: planeIndex
 							block: blockIndex
 							byte: byteIndex.
-						aBlockClosure value: codePoint]]]]]! !
+						aBlockClosure value: codePoint ] ] ] ] ]! !
 
-!UnicodeBitmap methodsFor: 'enumerating' stamp: 'ess 12/7/2024 10:49:44'!
+!UnicodeBitmap methodsFor: 'enumerating' stamp: 'ess 4/3/2025 08:03:06'!
 select: aUnaryBlock
 
 	| result |
 	result := self species new.
-	self do: [:each | (aUnaryBlock value: each) ifTrue: [result add: each]].
-	^result! !
+	self do: [ :each |
+		(aUnaryBlock value: each) ifTrue: [
+			result add: each ] ].
+	^ result! !
 
-!UnicodeBitmap methodsFor: 'set operations' stamp: 'ess 12/7/2024 10:38:43'!
-& anotherBitmap
+!UnicodeBitmap methodsFor: 'set operations' stamp: 'ess 4/3/2025 07:57:34'!
+& aBitmap
 
-	^self copy
-		intersect: anotherBitmap;
+	^ self copy
+		intersect: aBitmap;
 		yourself! !
 
-!UnicodeBitmap methodsFor: 'set operations' stamp: 'ess 12/7/2024 10:38:52'!
-- anotherBitmap
+!UnicodeBitmap methodsFor: 'set operations' stamp: 'ess 4/3/2025 07:57:43'!
+- aBitmap
 
-	^self copy
-		subtract: anotherBitmap;
+	^ self copy
+		subtract: aBitmap;
 		yourself! !
 
-!UnicodeBitmap methodsFor: 'set operations' stamp: 'ess 12/7/2024 10:38:17'!
-| anotherBitmap
+!UnicodeBitmap methodsFor: 'set operations' stamp: 'ess 4/3/2025 07:57:53'!
+| aBitmap
 
-	^self copy
-		merge: anotherBitmap;
+	^ self copy
+		merge: aBitmap;
 		yourself! !
 
-!UnicodeBitmap methodsFor: 'set operations' stamp: 'ess 12/7/2024 10:41:30'!
-intersect: anotherBitmap
+!UnicodeBitmap methodsFor: 'set operations' stamp: 'ess 4/3/2025 08:01:52'!
+intersect: aBitmap
 
-	(anotherBitmap isKindOf: self species) ifFalse:
-		[^self error: 'Can only intersect with another bitmap'].
+	(aBitmap isKindOf: self species) ifFalse: [
+		^ self error: 'Can only intersect with another bitmap' ].
 
-	self blocksDo:  "Remove blocks not in anotherBitmap.  Intersection is empty."
-		[:each :planeIndex :blockIndex |
-		(anotherBitmap blockAt: planeIndex at: blockIndex) ifNil:
-			[(self planeAt: planeIndex)
+	"Remove blocks not in anotherBitmap.  Intersection is empty."
+	self blocksDo: [ :each :planeIndex :blockIndex |
+		(aBitmap blockAt: planeIndex at: blockIndex) ifNil: [
+			(self planeAt: planeIndex)
 				at: blockIndex
-				put: nil]].
+				put: nil ] ].
 
-	anotherBitmap blocksDo:
-		[:each :planeIndex :blockIndex |
-		(self blockAt: planeIndex at: blockIndex) ifNotNil:
-			[:block |
-			1 to: block size do:
-				[:byteIndex |
+	aBitmap blocksDo: [ :each :planeIndex :blockIndex |
+		(self blockAt: planeIndex at: blockIndex) ifNotNil: [ :block |
+			1 to: block size do: [ :byteIndex |
 				block
 					at: byteIndex
 					put:
 						((block at: byteIndex)
-							bitAnd: (each at: byteIndex))]]]! !
+							bitAnd: (each at: byteIndex)) ] ] ]! !
 
-!UnicodeBitmap methodsFor: 'set operations' stamp: 'ess 12/7/2024 10:41:42'!
-merge: anotherBitmap
+!UnicodeBitmap methodsFor: 'set operations' stamp: 'ess 4/3/2025 08:02:24'!
+merge: aBitmap
 
-	(anotherBitmap isKindOf: self species) ifFalse:
-		[^self error: 'Can only merge another bitmap.  Try #addAll:'].
-	anotherBitmap blocksDo:
-		[:each :planeIndex :blockIndex | | block |
+	(aBitmap isKindOf: self species) ifFalse: [
+		^ self error: 'Can only merge another bitmap.  Try #addAll:' ].
+	aBitmap blocksDo: [ :each :planeIndex :blockIndex |
+		| block |
 		block := self
 			ensuringBlockAt: planeIndex
 			at: blockIndex.
-		1 to: block size do:
-			[:byteIndex |
+		1 to: block size do: [ :byteIndex |
 			block
 				at: byteIndex
 				put:
 					((block at: byteIndex)
-						bitOr: (each at: byteIndex))]]! !
+						bitOr: (each at: byteIndex)) ] ]! !
 
-!UnicodeBitmap methodsFor: 'set operations' stamp: 'ess 12/7/2024 10:37:13'!
-subtract: anotherBitmap
+!UnicodeBitmap methodsFor: 'set operations' stamp: 'ess 4/3/2025 08:03:52'!
+subtract: aBitmap
 
-	(anotherBitmap isKindOf: self species) ifFalse:
-		[^self error: 'Can only subtract another bitmap.  Try #removeAll:'].
-
-	anotherBitmap blocksDo:
-		[:each :planeIndex :blockIndex |
+	(aBitmap isKindOf: self species) ifFalse: [
+		^ self error: 'Can only subtract another bitmap.  Try #removeAll:' ].
+	aBitmap blocksDo: [ :each :planeIndex :blockIndex |
 		(self
 			blockAt: planeIndex
-			at: blockIndex) ifNotNil:
-				[:block |
-				1 to: block size do:
-					[:byteIndex |
+			at: blockIndex) ifNotNil: [ :block |
+				1 to: block size do: [ :byteIndex |
 					block
 						at: byteIndex
 						put:
 							((block at: byteIndex)
-								bitClear: (each at: byteIndex))]]]! !
+								bitClear: (each at: byteIndex)) ] ] ]! !
 
-!UnicodeBitmap methodsFor: 'private' stamp: 'ess 12/7/2024 09:16:54'!
+!UnicodeBitmap methodsFor: 'private' stamp: 'ess 4/3/2025 07:59:27'!
 countBitsInByte: aByte
 
 	| byte count |
 	byte := aByte.
 	count := 0.
-	[byte isZero] whileFalse:
-		[byte := byte bitAnd: byte - 1.
-		count := count + 1].
-	^count! !
+	[ byte = 0 ] whileFalse: [
+		byte := byte bitAnd: byte - 1.
+		count := count + 1 ].
+	^ count! !
 
-!UnicodeBitmap methodsFor: 'private' stamp: 'ess 12/7/2024 09:17:20'!
+!UnicodeBitmap methodsFor: 'private' stamp: 'ess 4/3/2025 07:59:36'!
 countBitsInByteArray: aByteArray
 
-	^aByteArray
+	^ aByteArray
 		inject: 0
-		into: [:sum :each | sum + (self countBitsInByte: each)]! !
+		into: [ :sum :each | sum + (self countBitsInByte: each) ]! !
 
-!UnicodeBitmap methodsFor: 'private' stamp: 'ess 12/7/2024 07:09:59'!
+!UnicodeBitmap methodsFor: 'private' stamp: 'ess 4/3/2025 08:02:31'!
 newBlock
 
-	^ByteArray newBits: 256! !
+	^ ByteArray newBits: 256! !
 
-!UnicodeBitmap methodsFor: 'private' stamp: 'ess 12/7/2024 09:15:56'!
+!UnicodeBitmap methodsFor: 'private' stamp: 'ess 4/3/2025 08:03:11'!
 shrinkPlane: planeArray
 
-	^self shrinkArray: planeArray! !
+	^ self shrinkArray: planeArray! !
 
-!UnicodeBitmap methodsFor: 'private-accessing' stamp: 'ess 12/7/2024 10:45:10'!
+!UnicodeBitmap methodsFor: 'private-accessing' stamp: 'ess 4/3/2025 07:59:03'!
 blockSize: aBlock
 
-	^aBlock
+	^ aBlock
 		inject: 0
-		into: [:sum :each | sum + (self countBitsInByteArray: each)]! !
+		into: [ :sum :each | sum + (self countBitsInByteArray: each) ]! !
 
 !CaseFoldingTests methodsFor: 'tests' stamp: 'ess 11/20/2024 23:14:00'!
 testFull
@@ -707,7 +697,7 @@ testFull
 		assert: (Unicode fullFold: 'ß' asCodePoints) asString
 		equals: 'ss'! !
 
-!CaseFoldingTests methodsFor: 'tests' stamp: 'ess 11/20/2024 23:15:25'!
+!CaseFoldingTests methodsFor: 'tests' stamp: 'ess 4/3/2025 08:15:40'!
 testFullvsSimple
 	"Reference: https://www.w3.org/TR/charmod-norm/#definitionCaseFolding"
 
@@ -721,94 +711,91 @@ testFullvsSimple
 		"U+1F9B GREEK CAPITAL LETTER ETA WITH DASIA AND VARIA AND PROSGEGRAMMENI"
 		assert: (Unicode simpleFold: #(16r1F9B)) asArray
 		"U+1F93 GREEK SMALL LETTER ETA WITH DASIA AND VARIA AND YPOGEGRAMMENI"
-		equals: #(16r1F93)
-! !
+		equals: #(16r1F93)! !
 
-!CaseFoldingTests methodsFor: 'tests' stamp: 'ess 11/20/2024 23:14:26'!
+!CaseFoldingTests methodsFor: 'tests' stamp: 'ess 4/3/2025 08:15:32'!
 testSimple
 	"LATIN SMALL LETTER SHARP S is a lowercase letter."
 
 	self
 		assert: (Unicode simpleFold: 'ß' asCodePoints) asString
-		equals: 'ß'
-! !
+		equals: 'ß'! !
 
-!CaseFoldingTests methodsFor: 'tests' stamp: 'ess 11/20/2024 23:18:04'!
+!CaseFoldingTests methodsFor: 'tests' stamp: 'ess 6/4/2025 15:05:53'!
 testUppercaseLowercaseAndUnaccentedLetters
 
-	Character uppercaseLowercaseAndUnaccentedLetters do:
-		[ :group |
-		(group first = $ÿ or: [ group first = $ß] )
-			ifFalse: [ group pairsDo: [ :upper :lower |
-									self
-										assert: (Unicode simpleFold: { upper codePoint }) asArray
-										equals: { lower codePoint }.
-									self
-										assert: (Unicode fullFold: { upper codePoint }) asArray
-										equals: { lower codePoint } ] ] ]! !
+	Character uppercaseLowercaseAndUnaccentedLetters do: [ :each |
+		(each first = $ÿ or: [ each first = $ß] ) ifFalse: [
+			each pairsDo: [ :upper :lower |
+				self
+					assert: (Unicode simpleFold: { upper codePoint }) asArray
+					equals: { lower codePoint }.
+				self
+					assert: (Unicode fullFold: { upper codePoint }) asArray
+					equals: { lower codePoint } ] ] ]! !
 
-!CodepointTests methodsFor: 'tests' stamp: 'ess 12/7/2024 08:24:15'!
+!CodepointTests methodsFor: 'tests' stamp: 'ess 4/3/2025 08:16:47'!
 testUtf16beBytes
 
 	| bytes |
-	bytes := ByteArray streamContents:
-						[ :stream | CodePoint
-									putUtf16Bytes: CodePoint byteOrderMark
-									on: stream
-									bigEndian: true ].
+	bytes := ByteArray streamContents: [ :stream |
+		Codepoint
+			putUtf16Bytes: Codepoint byteOrderMark
+			on: stream
+			bigEndian: true ].
 	self
-		assert: (CodePoint readByteOrderMark: bytes readStream)
+		assert: (Codepoint readByteOrderMark: bytes readStream)
 		equals: #utf16be! !
 
-!CodepointTests methodsFor: 'tests' stamp: 'ess 12/7/2024 08:24:15'!
+!CodepointTests methodsFor: 'tests' stamp: 'ess 4/3/2025 08:17:10'!
 testUtf16leBytes
 
 	| bytes |
-	bytes := ByteArray streamContents:
-						[ :stream | CodePoint
-									putUtf16Bytes: CodePoint byteOrderMark
-									on: stream
-									bigEndian: false ].
+	bytes := ByteArray streamContents: [ :stream |
+		Codepoint
+			putUtf16Bytes: Codepoint byteOrderMark
+			on: stream
+			bigEndian: false ].
 	self
-		assert: (CodePoint readByteOrderMark: bytes readStream)
+		assert: (Codepoint readByteOrderMark: bytes readStream)
 		equals: #utf16le! !
 
-!CodepointTests methodsFor: 'tests' stamp: 'ess 12/7/2024 08:24:15'!
+!CodepointTests methodsFor: 'tests' stamp: 'ess 4/3/2025 08:17:31'!
 testUtf32beBytes
 
 	| bytes |
-	bytes := ByteArray streamContents:
-						[ :stream | CodePoint
-									putUtf32Bytes: CodePoint byteOrderMark
-									on: stream
-									bigEndian: true ].
+	bytes := ByteArray streamContents: [ :stream |
+		Codepoint
+			putUtf32Bytes: Codepoint byteOrderMark
+			on: stream
+			bigEndian: true ].
 	self
-		assert: (CodePoint readByteOrderMark: bytes readStream)
+		assert: (Codepoint readByteOrderMark: bytes readStream)
 		equals: #utf32be! !
 
-!CodepointTests methodsFor: 'tests' stamp: 'ess 12/7/2024 08:24:15'!
+!CodepointTests methodsFor: 'tests' stamp: 'ess 4/3/2025 08:17:51'!
 testUtf32leBytes
 
 	| bytes |
-	bytes := ByteArray streamContents:
-						[ :stream | CodePoint
-									putUtf32Bytes: CodePoint byteOrderMark
-									on: stream
-									bigEndian: false ].
+	bytes := ByteArray streamContents: [ :stream |
+		Codepoint
+			putUtf32Bytes: Codepoint byteOrderMark
+			on: stream
+			bigEndian: false ].
 	self
-		assert: (CodePoint readByteOrderMark: bytes readStream)
+		assert: (Codepoint readByteOrderMark: bytes readStream)
 		equals: #utf32le! !
 
-!CodepointTests methodsFor: 'tests' stamp: 'ess 12/7/2024 08:24:15'!
+!CodepointTests methodsFor: 'tests' stamp: 'ess 4/3/2025 08:18:08'!
 testUtf8Bytes
 
 	| bytes |
-	bytes := ByteArray streamContents:
-						[ :stream | CodePoint
-									putUtf8Bytes: CodePoint byteOrderMark
-									on: stream ].
+	bytes := ByteArray streamContents: [ :stream |
+		Codepoint
+			putUtf8Bytes: Codepoint byteOrderMark
+			on: stream ].
 	self
-		assert: (CodePoint readByteOrderMark: bytes readStream)
+		assert: (Codepoint readByteOrderMark: bytes readStream)
 		equals: #utf8! !
 
 !ExtensionTests methodsFor: 'tests' stamp: 'ess 11/20/2024 23:18:32'!
@@ -823,10 +810,10 @@ canonicallyDecompose: codepoints
 
 	^ (Unicode canonicallyDecompose: codepoints) asArray! !
 
-!UnicodeDataTests methodsFor: 'tests' stamp: 'ess 12/7/2024 10:06:47'!
+!UnicodeDataTests methodsFor: 'tests' stamp: 'ess 4/3/2025 06:29:05'!
 canonicallyOrdered: codepoints
 
-	^ (CodePointArray newFrom: codepoints) asCanonicallyOrdered asArray! !
+	^ (CodepointArray newFrom: codepoints) asCanonicallyOrdered asArray! !
 
 !UnicodeDataTests methodsFor: 'tests' stamp: 'ess 11/20/2024 23:04:24'!
 testCanonicalDecomposition
@@ -838,7 +825,7 @@ testCanonicalDecomposition
 		assert: (self canonicallyDecompose: #(16rE0 16r31B 16r315))
 		equals: #(16r61 16r31B 16r300 16r315)! !
 
-!UnicodeDataTests methodsFor: 'tests' stamp: 'ess 11/20/2024 23:06:05'!
+!UnicodeDataTests methodsFor: 'tests' stamp: 'ess 4/3/2025 08:19:05'!
 testCanonicalOrdering
 
 	#(
@@ -849,120 +836,118 @@ testCanonicalOrdering
 		(16r61 16r031B 16r0300 16r0315)
 		(16r61 16r031B 16r0315 16r0300)
 	) do: [ :each |
-			self
-				assert: (self canonicallyOrdered: each)
-				equals: #(16r61 16r31B 16r300 16r315) ]! !
+		self
+			assert: (self canonicallyOrdered: each)
+			equals: #(16r61 16r31B 16r300 16r315) ]! !
 
-!CodePoint methodsFor: 'look in class' stamp: 'ess 11/8/2024 11:40:48'!
+!Codepoint methodsFor: 'look in class' stamp: 'ess 11/8/2024 11:40:48'!
 seeClassSide
 ! !
 
-!CodePoint class methodsFor: 'constants' stamp: 'ess 11/15/2024 09:19:48'!
+!Codepoint class methodsFor: 'constants' stamp: 'ess 11/15/2024 09:19:48'!
 byteOrderMark
 	"ZERO WIDTH NO-BREAK SPACE"
 
 	^ 16rFEFF! !
 
-!CodePoint class methodsFor: 'constants' stamp: 'ess 11/8/2024 09:20:22'!
+!Codepoint class methodsFor: 'constants' stamp: 'ess 11/8/2024 09:20:22'!
 maxVal
 
 	^ 16r10FFFF! !
 
-!CodePoint class methodsFor: 'constants' stamp: 'ess 11/8/2024 09:20:15'!
+!Codepoint class methodsFor: 'constants' stamp: 'ess 11/8/2024 09:20:15'!
 minVal
 
 	^ 0! !
 
-!CodePoint class methodsFor: 'constants' stamp: 'ess 11/15/2024 09:19:56'!
+!Codepoint class methodsFor: 'constants' stamp: 'ess 11/15/2024 09:19:56'!
 replacementCharacter
 
 	^ 16rFFFD! !
 
-!CodePoint class methodsFor: 'constants' stamp: 'ess 11/15/2024 09:27:38'!
+!Codepoint class methodsFor: 'constants' stamp: 'ess 11/15/2024 09:27:38'!
 substituteCharacter
 	"ASCII substitute character"
 	
 	^ 16r1A! !
 
-!CodePoint class methodsFor: 'accessing' stamp: 'ess 12/7/2024 08:30:19'!
+!Codepoint class methodsFor: 'accessing' stamp: 'ess 4/3/2025 08:07:32'!
 atPlane: planeIndex block: blockIndex byte: byteIndex
 
-	^((planeIndex - 1) * 256 + (blockIndex -1)) * 256 + (byteIndex - 1)! !
+	^ ((planeIndex - 1) * 256 + (blockIndex -1)) * 256 + (byteIndex - 1)! !
 
-!CodePoint class methodsFor: 'accessing' stamp: 'ess 12/7/2024 08:28:41'!
-coordinatesFor: aCodePoint
+!Codepoint class methodsFor: 'accessing' stamp: 'ess 4/3/2025 08:07:53'!
+coordinatesFor: aCodepoint
 
-	^self
-		coordinatesFor: aCodePoint
-		do: [:planeIndex :blockIndex :byteIndex | {planeIndex. blockIndex. byteIndex}]! !
+	^ self
+		coordinatesFor: aCodepoint
+		do: [ :planeIndex :blockIndex :byteIndex |
+			{ planeIndex . blockIndex . byteIndex } ]! !
 
-!CodePoint class methodsFor: 'accessing' stamp: 'ess 12/7/2024 08:27:50'!
-coordinatesFor: aCodePoint do: aTernaryBlock
+!Codepoint class methodsFor: 'accessing' stamp: 'ess 4/3/2025 06:33:26'!
+coordinatesFor: aCodepoint do: aTernaryBlock
 
 	| planeIndex blockIndex byteIndex |
-	(self isMaybeValid: aCodePoint) ifFalse: [self error: 'Invalid code point'].
-	planeIndex := (aCodePoint // 16r10000) + 1.  "Bits 17..22"
-	blockIndex := ((aCodePoint \\ 16r10000) // 16r100) + 1.  "Bits 9..16"
-	byteIndex := (aCodePoint \\ 16r100) + 1.  "Bits 1..8"
-	^aTernaryBlock
+	(self isMaybeValid: aCodepoint) ifFalse: [
+		^ self error: 'Invalid code point' ].
+	planeIndex := (aCodepoint // 16r10000) + 1.  "Bits 17..22"
+	blockIndex := ((aCodepoint \\ 16r10000) // 16r100) + 1.  "Bits 9..16"
+	byteIndex := (aCodepoint \\ 16r100) + 1.  "Bits 1..8"
+	^ aTernaryBlock
 		value: planeIndex
 		value: blockIndex
 		value: byteIndex! !
 
-!CodePoint class methodsFor: 'converting' stamp: 'ess 11/15/2024 10:30:27'!
+!Codepoint class methodsFor: 'converting' stamp: 'ess 11/15/2024 10:30:27'!
 asAscii: aCodepoint
 
 	^ self
 		asAscii: aCodepoint
 		ifAbsent: [ self substituteCharacter ]! !
 
-!CodePoint class methodsFor: 'converting' stamp: 'ess 11/15/2024 10:30:27'!
+!Codepoint class methodsFor: 'converting' stamp: 'ess 11/15/2024 10:30:27'!
 asAscii: aCodepoint ifAbsent: exceptionBlock
 
 	^ (self isAscii: aCodepoint)
 		ifTrue: [ aCodepoint ]
 		ifFalse: [ exceptionBlock value ]! !
 
-!CodePoint class methodsFor: 'converting' stamp: 'ess 11/15/2024 10:30:38'!
+!Codepoint class methodsFor: 'converting' stamp: 'ess 11/15/2024 10:30:38'!
 asLatin1: aCodepoint
 
 	^ self
 		asLatin1: aCodepoint
 		ifAbsent: [ self substituteCharacter ]! !
 
-!CodePoint class methodsFor: 'converting' stamp: 'ess 11/15/2024 10:30:38'!
+!Codepoint class methodsFor: 'converting' stamp: 'ess 11/15/2024 10:30:38'!
 asLatin1: aCodepoint ifAbsent: exceptionBlock
 
 	^ (self isLatin1: aCodepoint)
 		ifTrue: [ aCodepoint ]
 		ifFalse: [ exceptionBlock value ]! !
 
-!CodePoint class methodsFor: 'converting' stamp: 'ess 11/15/2024 10:43:35'!
+!Codepoint class methodsFor: 'converting' stamp: 'ess 4/3/2025 06:39:17'!
 asSurrogatePair: aCodepoint ifAbsent: exceptionBlock
 	"N.B., cannot use exceptionBlock here to substitute a replacement character.  An error here is bigger than that."
 
 	| twentyBits high10 low10 leading trailing |
-
-	(aCodepoint between: 16r10000 and: 16r10FFFF)
-		ifFalse: [ ^ exceptionBlock value ].
-		
+	(aCodepoint between: 16r10000 and: 16r10FFFF) ifFalse: [
+		^ exceptionBlock value ].
 	twentyBits := aCodepoint - 16r10000.
 	high10 := twentyBits // 16r400.
 	low10 := twentyBits \\ 16r400.
 	leading := high10 + 16rD800.
 	trailing := low10 + 16rDC00.
-	
-	"Possibly returning a Point here would read better, but that's less useful higher-up the chain."
 	^ { leading . trailing }! !
 
-!CodePoint class methodsFor: 'converting' stamp: 'ess 11/15/2024 10:30:58'!
+!Codepoint class methodsFor: 'converting' stamp: 'ess 11/15/2024 10:30:58'!
 asUcs2: aCodepoint
 
 	^ self
 		asUcs2: aCodepoint
 		ifAbsent: [ self replacementCharacter ]! !
 
-!CodePoint class methodsFor: 'converting' stamp: 'ess 11/15/2024 10:30:58'!
+!Codepoint class methodsFor: 'converting' stamp: 'ess 11/15/2024 10:30:58'!
 asUcs2: aCodepoint ifAbsent: exceptionBlock
 	"2-byte Universal Character Set is an obsolete encoding... sometimes still needed to communicate with older systems such as GSM networks."
 
@@ -970,39 +955,41 @@ asUcs2: aCodepoint ifAbsent: exceptionBlock
 		ifTrue: [ aCodepoint ]
 		ifFalse: [ exceptionBlock value ]! !
 
-!CodePoint class methodsFor: 'converting' stamp: 'ess 11/15/2024 10:31:43'!
+!Codepoint class methodsFor: 'converting' stamp: 'ess 11/15/2024 10:31:43'!
 asUcs4: aCodepoint
 
 	^ self asUtf32: aCodepoint! !
 
-!CodePoint class methodsFor: 'converting' stamp: 'ess 11/15/2024 10:31:49'!
+!Codepoint class methodsFor: 'converting' stamp: 'ess 11/15/2024 10:31:49'!
 asUcs4: aCodepoint ifAbsent: exceptionBlock
 
 	^ self
 		asUtf32: aCodepoint
 		ifAbsent: exceptionBlock! !
 
-!CodePoint class methodsFor: 'converting' stamp: 'ess 11/15/2024 10:31:16'!
+!Codepoint class methodsFor: 'converting' stamp: 'ess 11/15/2024 10:31:16'!
 asUtf16: aCodepoint
 
 	^ self
 		asUtf16: aCodepoint
 		ifAbsent: [ self replacementCharacter ]! !
 
-!CodePoint class methodsFor: 'converting' stamp: 'ess 11/15/2024 10:45:34'!
+!Codepoint class methodsFor: 'converting' stamp: 'ess 6/4/2025 15:13:24'!
 asUtf16: aCodepoint ifAbsent: exceptionBlock
 
 	| codepoint |
-	codepoint := self asValid: aCodepoint
-					ifAbsent: exceptionBlock.
+	codepoint := self
+		asValid: aCodepoint
+		ifAbsent: exceptionBlock.
 	^ (self isBasicMultilingualPlane: codepoint)
 		ifTrue: [ { codepoint } ]
-		ifFalse:
-			[ self
+		ifFalse: [
+			self
 				asSurrogatePair: codepoint
-				ifAbsent: [ ^ self error: 'Invalid codepoint' ] ]! !
+				ifAbsent: [
+					^ self error: 'Invalid codepoint' ] ]! !
 
-!CodePoint class methodsFor: 'converting' stamp: 'ess 11/15/2024 10:31:36'!
+!Codepoint class methodsFor: 'converting' stamp: 'ess 11/15/2024 10:31:36'!
 asUtf16Bytes: aCodepoint bigEndian: bigEndian
 
 	^ self
@@ -1010,32 +997,33 @@ asUtf16Bytes: aCodepoint bigEndian: bigEndian
 		bigEndian: bigEndian
 		ifAbsent: [ self replacementCharacter ]! !
 
-!CodePoint class methodsFor: 'converting' stamp: 'ess 11/15/2024 10:31:36'!
+!Codepoint class methodsFor: 'converting' stamp: 'ess 4/3/2025 06:31:14'!
 asUtf16Bytes: aCodepoint bigEndian: bigEndian ifAbsent: exceptionBlock
 
 	^ ByteArray
-		streamContents: [ :stream | self
-									putUtf16Bytes: aCodepoint
-									on: stream
-									bigEndian: true
-									ifAbsent: exceptionBlock ]
+		streamContents: [ :stream |
+			self
+				putUtf16Bytes: aCodepoint
+				on: stream
+				bigEndian: true
+				ifAbsent: exceptionBlock ]
 		limitedTo: 4! !
 
-!CodePoint class methodsFor: 'converting' stamp: 'ess 11/15/2024 10:31:49'!
+!Codepoint class methodsFor: 'converting' stamp: 'ess 11/15/2024 10:31:49'!
 asUtf32: aCodepoint
 
 	^ self
 		asUtf32: aCodepoint
 		ifAbsent: [ self replacementCharacter ]! !
 
-!CodePoint class methodsFor: 'converting' stamp: 'ess 11/15/2024 10:31:49'!
+!Codepoint class methodsFor: 'converting' stamp: 'ess 11/15/2024 10:31:49'!
 asUtf32: aCodepoint ifAbsent: exceptionBlock
 
 	^ (self isValid: aCodepoint)
 		ifTrue: [ aCodepoint ]
 		ifFalse: [ exceptionBlock value ]! !
 
-!CodePoint class methodsFor: 'converting' stamp: 'ess 11/15/2024 10:32:00'!
+!Codepoint class methodsFor: 'converting' stamp: 'ess 11/15/2024 10:32:00'!
 asUtf32Bytes: aCodepoint bigEndian: bigEndian
 
 	^ self
@@ -1043,25 +1031,27 @@ asUtf32Bytes: aCodepoint bigEndian: bigEndian
 		bigEndian: bigEndian
 		ifAbsent: [ self replacementCharacter ]! !
 
-!CodePoint class methodsFor: 'converting' stamp: 'ess 11/15/2024 10:32:00'!
+!Codepoint class methodsFor: 'converting' stamp: 'ess 4/3/2025 06:31:41'!
 asUtf32Bytes: aCodepoint bigEndian: bigEndian ifAbsent: exceptionBlock
 
 	^ ByteArray
-		streamContents: [ :stream | self
-									putUtf32Bytes: aCodepoint
-									on: stream
-									bigEndian: true
-									ifAbsent: exceptionBlock ]
+		streamContents: [ :stream |
+			self
+				putUtf32Bytes: aCodepoint
+				on: stream
+				bigEndian: true
+				ifAbsent: exceptionBlock ]
 		limitedTo: 4! !
 
-!CodePoint class methodsFor: 'converting' stamp: 'ess 11/15/2024 10:39:27'!
+!Codepoint class methodsFor: 'converting' stamp: 'ess 4/3/2025 06:39:41'!
 asValid: aCodepoint
 
 	^ self
 		asValid: aCodepoint
-		ifAbsent: [ ^ self error: 'Invalid codepoint' ]! !
+		ifAbsent: [
+			^ self error: 'Invalid codepoint' ]! !
 
-!CodePoint class methodsFor: 'converting' stamp: 'ess 11/15/2024 10:40:35'!
+!Codepoint class methodsFor: 'converting' stamp: 'ess 11/15/2024 10:40:35'!
 asValid: aCodepoint ifAbsent: exceptionBlock
 	"... ifAbsent in the sense of 'not defined in the Unicode standard'"
 
@@ -1069,29 +1059,28 @@ asValid: aCodepoint ifAbsent: exceptionBlock
 		ifTrue: [ aCodepoint ]
 		ifFalse: [ exceptionBlock value ]! !
 
-!CodePoint class methodsFor: 'instance creation' stamp: 'ess 11/15/2024 14:12:10'!
+!Codepoint class methodsFor: 'instance creation' stamp: 'ess 4/3/2025 08:08:03'!
 fromHex: aString
 	"Non-validating"
 
-	aString isEmptyOrNil ifTrue: [ ^ nil ].
+	aString isEmptyOrNil ifTrue: [
+		^ nil ].
 	^ SmallInteger
 		readFrom: aString asUppercase readStream
 		base: 16! !
 
-!CodePoint class methodsFor: 'instance creation' stamp: 'ess 11/15/2024 09:42:44'!
+!Codepoint class methodsFor: 'instance creation' stamp: 'ess 4/3/2025 06:34:36'!
 fromSurrogate: leading pair: trailing ifAbsent: exceptionBlock
 
-	| twentyBits high10 low10 |
-	
-	(self isSurrogate: leading pair: trailing)
-		ifFalse: [ ^ exceptionBlock value ].
-		
+	| twentyBits high10 low10 |	
+	(self isSurrogate: leading pair: trailing) ifFalse: [
+		^ exceptionBlock value ].
 	high10 := leading - 16rD800.
 	low10 := trailing - 16rDC00.
 	twentyBits := (high10 * 16r400) + low10.
 	^ twentyBits + 16r10000! !
 
-!CodePoint class methodsFor: 'printing' stamp: 'ess 11/15/2024 10:16:23'!
+!Codepoint class methodsFor: 'printing' stamp: 'ess 11/15/2024 10:16:23'!
 putUtf16Bytes: aCodepoint on: aStream bigEndian: bigEndian
 
 	^ self
@@ -1100,20 +1089,20 @@ putUtf16Bytes: aCodepoint on: aStream bigEndian: bigEndian
 		bigEndian: bigEndian
 		ifAbsent: [ self replacementCharacter ]! !
 
-!CodePoint class methodsFor: 'printing' stamp: 'ess 11/15/2024 10:31:16'!
+!Codepoint class methodsFor: 'printing' stamp: 'ess 4/3/2025 08:08:38'!
 putUtf16Bytes: aCodepoint on: aStream bigEndian: bigEndian ifAbsent: exceptionBlock
 
 	| encoding |
 	encoding := self
-				asUtf16: aCodepoint
-				ifAbsent: exceptionBlock.
-	encoding
-		do: [ :each | aStream
-						nextUint16Put: each
-						bigEndian: bigEndian ].
+		asUtf16: aCodepoint
+		ifAbsent: exceptionBlock.
+	encoding do: [ :each |
+		aStream
+			nextUint16Put: each
+			bigEndian: bigEndian ].
 	^ encoding! !
 
-!CodePoint class methodsFor: 'printing' stamp: 'ess 11/15/2024 10:17:41'!
+!Codepoint class methodsFor: 'printing' stamp: 'ess 11/15/2024 10:17:41'!
 putUtf32Bytes: aCodepoint on: aStream bigEndian: bigEndian
 
 	^ self
@@ -1122,7 +1111,7 @@ putUtf32Bytes: aCodepoint on: aStream bigEndian: bigEndian
 		bigEndian: bigEndian
 		ifAbsent: [ self replacementCharacter ]! !
 
-!CodePoint class methodsFor: 'printing' stamp: 'ess 11/15/2024 10:31:49'!
+!Codepoint class methodsFor: 'printing' stamp: 'ess 11/15/2024 10:31:49'!
 putUtf32Bytes: aCodepoint on: aStream bigEndian: bigEndian ifAbsent: exceptionBlock
 
 	^ aStream
@@ -1132,7 +1121,7 @@ putUtf32Bytes: aCodepoint on: aStream bigEndian: bigEndian ifAbsent: exceptionBl
 				ifAbsent: exceptionBlock)
 		bigEndian: bigEndian! !
 
-!CodePoint class methodsFor: 'printing' stamp: 'ess 11/15/2024 12:10:02'!
+!Codepoint class methodsFor: 'printing' stamp: 'ess 11/15/2024 12:10:02'!
 putUtf8Bytes: aCodepoint on: aStream
 
 	^ self
@@ -1140,29 +1129,29 @@ putUtf8Bytes: aCodepoint on: aStream
 		on: aStream
 		ifAbsent: [ self replacementCharacter ]! !
 
-!CodePoint class methodsFor: 'printing' stamp: 'ess 11/15/2024 12:09:18'!
+!Codepoint class methodsFor: 'printing' stamp: 'ess 4/3/2025 06:36:05'!
 putUtf8Bytes: aCodepoint on: aStream ifAbsent: exceptionBlock
 
 	| codepoint byte1 byte2 byte3 byte4 |
-	codepoint := self asValid: aCodepoint
-					ifAbsent: exceptionBlock.
-					
-	codepoint <= 16r7F
-		ifTrue: [ ^ aStream nextPut: codepoint ].
-	codepoint <= 16r7FF
-		ifTrue: [ byte1 := codepoint bitShift: -6.
-				byte2 := codepoint bitAnd: 16r3F.
-				^ aStream
-					nextPut: byte1 + 2r11000000;
-					nextPut: byte2 + 2r10000000 ].
-	codepoint <= 16rFFFF
-		ifTrue: [ byte1 := codepoint bitShift: -12.
-				byte2 := (codepoint bitShift: -6) bitAnd: 16r3F.
-				byte3 := codepoint bitAnd: 16r3F.
-				^ aStream
-					nextPut: byte1 + 2r11100000;
-					nextPut: byte2 + 2r10000000;
-					nextPut: byte3 + 2r10000000 ].
+	codepoint := self
+		asValid: aCodepoint
+		ifAbsent: exceptionBlock.			
+	codepoint <= 16r7F ifTrue: [
+		^ aStream nextPut: codepoint ].
+	codepoint <= 16r7FF ifTrue: [
+		byte1 := codepoint bitShift: -6.
+		byte2 := codepoint bitAnd: 16r3F.
+		^ aStream
+			nextPut: byte1 + 2r11000000;
+			nextPut: byte2 + 2r10000000 ].
+	codepoint <= 16rFFFF ifTrue: [
+		byte1 := codepoint bitShift: -12.
+		byte2 := (codepoint bitShift: -6) bitAnd: 16r3F.
+		byte3 := codepoint bitAnd: 16r3F.
+		^ aStream
+			nextPut: byte1 + 2r11100000;
+			nextPut: byte2 + 2r10000000;
+			nextPut: byte3 + 2r10000000 ].
 	byte1 := codepoint bitShift: -18.
 	byte2 := (codepoint bitShift: -12) bitAnd: 16r3F.
 	byte3 := (codepoint bitShift: -6) bitAnd: 16r3F.
@@ -1173,29 +1162,29 @@ putUtf8Bytes: aCodepoint on: aStream ifAbsent: exceptionBlock
 		nextPut: byte3 + 2r10000000;
 		nextPut: byte4 + 2r10000000! !
 
-!CodePoint class methodsFor: 'testing' stamp: 'ess 11/15/2024 09:53:35'!
+!Codepoint class methodsFor: 'testing' stamp: 'ess 11/15/2024 09:53:35'!
 isAscii: anInteger
 
 	^ (anInteger bitAnd: 16r7F) = anInteger! !
 
-!CodePoint class methodsFor: 'testing' stamp: 'ess 11/15/2024 09:21:27'!
+!Codepoint class methodsFor: 'testing' stamp: 'ess 11/15/2024 09:21:27'!
 isBMP: anInteger
 
 	^ self isBasicMultilingualPlane: anInteger! !
 
-!CodePoint class methodsFor: 'testing' stamp: 'ess 11/15/2024 09:45:05'!
+!Codepoint class methodsFor: 'testing' stamp: 'ess 11/15/2024 09:45:05'!
 isBasicMultilingualPlane: anInteger
 	"Plane 0"
 	
 	^ (anInteger bitAnd: 16rFFFF) = anInteger
 		and: [ (self isSurrogate: anInteger) not ]! !
 
-!CodePoint class methodsFor: 'testing' stamp: 'ess 11/15/2024 09:24:44'!
+!Codepoint class methodsFor: 'testing' stamp: 'ess 11/15/2024 09:24:44'!
 isLatin1: anInteger
 
 	^ (anInteger bitAnd: 16rFF) = anInteger! !
 
-!CodePoint class methodsFor: 'testing' stamp: 'ess 11/15/2024 09:33:45'!
+!Codepoint class methodsFor: 'testing' stamp: 'ess 11/15/2024 09:33:45'!
 isLeadingSurrogate: anInteger
 	"N.B., Using the terms 'leading' and 'trailing' instead of 'high' and 'low' to avoid the confusion caused by the 'high' values being numerically lower than the 'low' values."
 
@@ -1203,7 +1192,7 @@ isLeadingSurrogate: anInteger
 		between: 16rD800
 		and: 16rDBFF! !
 
-!CodePoint class methodsFor: 'testing' stamp: 'ess 11/15/2024 10:35:26'!
+!Codepoint class methodsFor: 'testing' stamp: 'ess 11/15/2024 10:35:26'!
 isMaybeValid: anInteger
 	"Answer if anInteger might, possibly, be a codepoint.  `true` does not necessarily mean that anInteger is a valid codepoint."
 
@@ -1211,7 +1200,7 @@ isMaybeValid: anInteger
 		between: self minVal
 		and: self maxVal! !
 
-!CodePoint class methodsFor: 'testing' stamp: 'ess 11/15/2024 09:21:47'!
+!Codepoint class methodsFor: 'testing' stamp: 'ess 11/15/2024 09:21:47'!
 isSurrogate: anInteger
 	"Reserved range for character surrogates."
 
@@ -1219,13 +1208,13 @@ isSurrogate: anInteger
 		between: 16rD800
 		and: 16rDFFF! !
 
-!CodePoint class methodsFor: 'testing' stamp: 'ess 11/15/2024 09:34:44'!
+!Codepoint class methodsFor: 'testing' stamp: 'ess 11/15/2024 09:34:44'!
 isSurrogate: leading pair: trailing
 
 	^ (self isLeadingSurrogate: leading)
 		and: [ self isTrailingSurrogate: trailing ]! !
 
-!CodePoint class methodsFor: 'testing' stamp: 'ess 11/15/2024 09:33:55'!
+!Codepoint class methodsFor: 'testing' stamp: 'ess 11/15/2024 09:33:55'!
 isTrailingSurrogate: anInteger
 	"N.B., Using the terms 'leading' and 'trailing' instead of 'high' and 'low' to avoid the confusion caused by the 'high' values being numerically lower than the 'low' values."
 
@@ -1233,35 +1222,35 @@ isTrailingSurrogate: anInteger
 		between: 16rDC00
 		and: 16rDFFF! !
 
-!CodePoint class methodsFor: 'testing' stamp: 'ess 11/15/2024 10:35:26'!
+!Codepoint class methodsFor: 'testing' stamp: 'ess 11/15/2024 10:35:26'!
 isValid: anInteger
 
 	^ (self isMaybeValid: anInteger)
 		and: [ (self isSurrogate: anInteger) not ]! !
 
-!CodePoint class methodsFor: 'testing' stamp: 'ess 11/15/2024 12:19:04'!
+!Codepoint class methodsFor: 'testing' stamp: 'ess 4/3/2025 06:38:08'!
 readByteOrderMark: aBinaryStream
 
 	| position bytes |
-
 	position := aBinaryStream position.
 	bytes := aBinaryStream next: 4.
-
-	bytes size = 4 ifTrue:
-		[ bytes = #[16rFF 16rFE 16r00 16r00] ifTrue: [ ^ #utf32le ].
-		bytes = #[16r00 16r00 16rFE 16rFF] ifTrue: [ ^ #utf32be ].
+	bytes size = 4 ifTrue: [
+		bytes = #[16rFF 16rFE 16r00 16r00] ifTrue: [
+			^ #utf32le ].
+		bytes = #[16r00 16r00 16rFE 16rFF] ifTrue: [
+			^ #utf32be ].
 		aBinaryStream skip: - 1.
 		bytes := bytes allButLast ].
-				
-	bytes size = 3 ifTrue:
-		[ bytes = #[16rEF 16rBB 16rBF] ifTrue: [ ^ #utf8 ].
+	bytes size = 3 ifTrue: [
+		bytes = #[16rEF 16rBB 16rBF] ifTrue: [
+			^ #utf8 ].
 		aBinaryStream skip: -1.
 		bytes := bytes allButLast ].
-	
-	bytes size = 2 ifTrue:
-		[ bytes = #[16rFF 16rFE] ifTrue: [ ^ #utf16le ].
-		bytes = #[16rFE 16rFF] ifTrue: [ ^ #utf16be ] ].
-
+	bytes size = 2 ifTrue: [
+		bytes = #[16rFF 16rFE] ifTrue: [
+			^ #utf16le ].
+		bytes = #[16rFE 16rFF] ifTrue: [
+			^ #utf16be ] ].
 	aBinaryStream position: position.
 	^ nil! !
 
@@ -1282,39 +1271,40 @@ addMapping: aSequenceOfCodepoints
 		startingAt: 1.
 	^ nextIndex! !
 
-!CodepointMappings methodsFor: 'as yet unclassified' stamp: 'ess 12/7/2024 10:06:47'!
+!CodepointMappings methodsFor: 'as yet unclassified' stamp: 'ess 4/3/2025 06:29:05'!
 initialize
 
-	mappings := CodePointArray new! !
+	mappings := CodepointArray new! !
 
-!CodepointMappings methodsFor: 'as yet unclassified' stamp: 'ess 11/20/2024 23:00:48'!
+!CodepointMappings methodsFor: 'as yet unclassified' stamp: 'ess 4/3/2025 06:42:26'!
 mappingAt: lengthIndex do: aUnaryBlock
 
 	| length |
 	length := mappings at: lengthIndex.
-	1 to: length do: [ :each | | mapped |
-					mapped := mappings at: lengthIndex + each.
-					aUnaryBlock value: mapped ]! !
+	1 to: length do: [ :each |
+		| mapped |
+		mapped := mappings at: lengthIndex + each.
+		aUnaryBlock value: mapped ]! !
 
-!DecompositionMappings methodsFor: 'accessing' stamp: 'ess 11/20/2024 22:09:53'!
+!DecompositionMappings methodsFor: 'accessing' stamp: 'ess 4/3/2025 06:43:31'!
 at: aCodepoint put: decompositionString
 
 	| type mapping lengthIndex |
-	decompositionString isEmptyOrNil ifTrue: [ ^ nil ].
-
+	decompositionString isEmptyOrNil ifTrue: [
+		^ nil ].
 	type := self readDecompositionType: decompositionString.
-	type ifNotNil: [ types
-					at: aCodepoint
-					put: type ].
-
+	type ifNotNil: [
+		types
+			at: aCodepoint
+			put: type ].
 	mapping := self readDecompositionMapping: decompositionString.
-	mapping isEmptyOrNil ifTrue: [ ^ nil ].
-	
-	mapping size = 2
-		ifTrue: [ self
-					compositionAt: (mapping at: 1)
-					at: (mapping at: 2)
-					put: aCodepoint ].
+	mapping isEmptyOrNil ifTrue: [
+		^ nil ].
+	mapping size = 2 ifTrue: [
+		self
+			compositionAt: (mapping at: 1)
+			at: (mapping at: 2)
+			put: aCodepoint ].
 
 	"First word gives length of mapping in codepoints."
 	lengthIndex := mappings addMapping: mapping.
@@ -1325,48 +1315,46 @@ at: aCodepoint put: decompositionString
 	"Return composition mapping."
 	^ mapping asWordArray! !
 
-!DecompositionMappings methodsFor: 'accessing' stamp: 'ess 12/7/2024 10:06:47'!
+!DecompositionMappings methodsFor: 'accessing' stamp: 'ess 6/4/2025 15:24:29'!
 canonicallyCompose: aSequenceOfCodepoints
 
-	| decomposition |
-	
+	| decomposition lastCodepoint mapping |
+
 	"Latin-1 is unaffected by canonical composition."
-	(aSequenceOfCodepoints allSatisfy: [ :each | each <= 255 ])
-		ifTrue: [ ^ CodePointArray newFrom: aSequenceOfCodepoints ].
-		
+	(aSequenceOfCodepoints allSatisfy: [ :each | each <= 255 ]) ifTrue: [
+		^ CodepointArray newFrom: aSequenceOfCodepoints ].
+
 	decomposition := self canonicallyDecompose: aSequenceOfCodepoints.
-	^ CodePointArray streamContents:
-		[ :stream | | lastCodepoint |
-		lastCodepoint :=
-			decomposition
-				inject: nil
-				into: [ :prevCodepoint :nextCodepoint |
-					prevCodepoint
-						ifNil: [ nextCodepoint ]
-						ifNotNil:
-							[ | mapping | 
-							mapping := self
-										compositionAt: prevCodepoint
-										at: nextCodepoint.
-							mapping
-								ifNotNil: [ mapping ]
-								ifNil: [ stream nextPut: prevCodepoint.
-									nextCodepoint ] ] ].
+	^ CodepointArray streamContents: [ :stream |
+		lastCodepoint := decomposition
+			inject: nil
+			into: [ :prev :next |
+				prev
+					ifNil: [ next ]
+					ifNotNil: [
+						mapping := self
+							compositionAt: prev
+							at: next.
+						mapping
+							ifNotNil: [ mapping ]
+							ifNil: [
+								stream nextPut: prev.
+								next ] ] ].
 		stream nextPut: lastCodepoint ]! !
 
-!DecompositionMappings methodsFor: 'accessing' stamp: 'ess 12/7/2024 10:06:47'!
+!DecompositionMappings methodsFor: 'accessing' stamp: 'ess 4/3/2025 06:45:29'!
 canonicallyDecompose: aSequenceOfCodepoints
 
 	| codepoints |
-	
+
 	"ASCII is unaffected by any decomposition."
-	(aSequenceOfCodepoints allSatisfy: [ :each | each <= 127 ])
-		ifTrue: [ ^ CodePointArray newFrom: aSequenceOfCodepoints ].
-	
-	codepoints := CodePointArray streamContents:
-					[ :stream | self
-								canonicallyDecompose: aSequenceOfCodepoints
-								on: stream ].
+	(aSequenceOfCodepoints allSatisfy: [ :each | each <= 127 ]) ifTrue: [
+		^ CodepointArray newFrom: aSequenceOfCodepoints ].
+
+	codepoints := CodepointArray streamContents: [ :stream |
+		self
+			canonicallyDecompose: aSequenceOfCodepoints
+			on: stream ].
 	codepoints beCanonicallyOrdered.
 	^ codepoints! !
 
@@ -1390,62 +1378,60 @@ compositionKeyAt: firstCodepoint at: secondCodepoint
 	^ (firstCodepoint bitShift: 21)
 		bitOr: secondCodepoint! !
 
-!DecompositionMappings methodsFor: 'private' stamp: 'ess 12/7/2024 08:24:15'!
+!DecompositionMappings methodsFor: 'private' stamp: 'ess 6/4/2025 15:17:28'!
 readDecompositionMapping: decompositionString
 
 	| mappingString mapping |
 	mappingString := decompositionString.
 
 	"Skip mapping <type>."
-	(mappingString at: 1) = $<
-		ifTrue: [ | terminator |
-				terminator := mappingString indexOf: $>.
-				terminator isZero
-					ifFalse: [ mappingString := mappingString
-												copyFrom: terminator + 1
-												to: mappingString size ] ].
+	(mappingString at: 1) = $< ifTrue: [
+		| terminator |
+		terminator := mappingString indexOf: $>.
+		terminator = 0 ifFalse: [
+			mappingString := mappingString
+				copyFrom: terminator + 1
+				to: mappingString size ] ].
 
 	"Parse mapping as codepoints."
 	mappingString := mappingString withBlanksTrimmed.
-	mapping := mappingString isEmpty
-					ifTrue: [ nil ]
-					ifFalse: [ mappingString substrings
-								collect: [ :each | CodePoint fromHex: each ] ].
+	mapping := mappingString notEmpty ifTrue: [
+		mappingString substrings
+			collect: [ :each | Codepoint fromHex: each ] ].
 
-	^ mapping isEmptyOrNil
-		ifTrue: [ nil ]
-		ifFalse: [ mapping ]! !
+	^ mapping isEmptyOrNil ifFalse: [ mapping ]! !
 
-!DecompositionMappings methodsFor: 'private' stamp: 'ess 11/20/2024 18:10:14'!
+!DecompositionMappings methodsFor: 'private' stamp: 'ess 4/3/2025 06:47:40'!
 readDecompositionType: decompositionMapping
 
 	"Read mapping <type> if specified."
-	(decompositionMapping at: 1) = $<
-		ifTrue: [ | terminator |
-				terminator := decompositionMapping indexOf: $>.
-				terminator isZero
-					ifFalse: [ ^ (decompositionMapping
-									copyFrom: 1
-									to: terminator) asSymbol ] ].
+	(decompositionMapping at: 1) = $< ifTrue: [
+		| terminator |
+		terminator := decompositionMapping indexOf: $>.
+		terminator = 0 ifFalse: [
+			^ (decompositionMapping
+					copyFrom: 1
+					to: terminator)
+				asSymbol ] ].
 	^ nil! !
 
-!DecompositionMappings methodsFor: 'private-accessing' stamp: 'ess 11/20/2024 18:32:53'!
+!DecompositionMappings methodsFor: 'private-accessing' stamp: 'ess 4/3/2025 06:48:09'!
 canonicallyDecompose: aSequenceOfCodepoints on: aStream
 
-	aSequenceOfCodepoints do: [ :each | self
-										canonicallyDecomposeCodepoint: each
-										on: aStream ]! !
+	aSequenceOfCodepoints do: [ :each |
+		self
+			canonicallyDecomposeCodepoint: each
+			on: aStream ]! !
 
-!DecompositionMappings methodsFor: 'private-accessing' stamp: 'ess 11/20/2024 22:41:48'!
+!DecompositionMappings methodsFor: 'private-accessing' stamp: 'ess 4/3/2025 06:48:32'!
 canonicallyDecomposeCodepoint: aCodepoint on: aStream
 
 	| mapping |
-	
-	(types at: aCodepoint) ifNotNil: [ ^ self ].
-
+	(types at: aCodepoint) ifNotNil: [
+		^ self ].
 	mapping := decompositions at: aCodepoint.
-	mapping ifNil: [ ^ aStream nextPut: aCodepoint ].
-	
+	mapping ifNil: [
+		^ aStream nextPut: aCodepoint ].
 	mappings
 		mappingAt: mapping
 		do: [ :each |
@@ -1461,110 +1447,114 @@ compositionAt: firstCodepoint at: secondCodepoint
 		at: secondCodepoint
 		ifAbsent: [ nil ]! !
 
-!DecompositionMappings methodsFor: 'private-accessing' stamp: 'ess 11/20/2024 21:06:02'!
+!DecompositionMappings methodsFor: 'private-accessing' stamp: 'ess 4/3/2025 06:48:42'!
 compositionAt: firstCodepoint at: secondCodepoint ifAbsent: exceptionBlock
 
 	| key |
 	key := self
-			compositionKeyAt: firstCodepoint
-			at: secondCodepoint.
+		compositionKeyAt: firstCodepoint
+		at: secondCodepoint.
 	^ compositions
 		at: key
 		ifAbsent: exceptionBlock! !
 
-!DecompositionMappings methodsFor: 'private-accessing' stamp: 'ess 11/20/2024 21:06:08'!
+!DecompositionMappings methodsFor: 'private-accessing' stamp: 'ess 4/3/2025 06:48:49'!
 compositionAt: firstCodepoint at: secondCodepoint put: composedCodepoint
 
 	| key |
 	key := self
-			compositionKeyAt: firstCodepoint
-			at: secondCodepoint.
+		compositionKeyAt: firstCodepoint
+		at: secondCodepoint.
 	^ compositions
 		at: key
 		put: composedCodepoint! !
 
-!LookupCache methodsFor: 'accessing' stamp: 'ess 12/7/2024 10:07:23'!
+!LookupCache methodsFor: 'accessing' stamp: 'ess 4/3/2025 06:49:08'!
 at: anObject ifAbsentPut: aBlock
 
-	^self subclassResponsibility! !
+	^ self subclassResponsibility! !
 
-!LookupCache class methodsFor: 'instance creation' stamp: 'ess 12/7/2024 10:11:52'!
-lru: maxSize
+!LookupCache class methodsFor: 'instance creation' stamp: 'ess 5/29/2025 03:17:13'!
+leastRecentlyUsed: maxSize
 
-	^LRUCache maxSize: maxSize! !
+	^ LeastRecentlyUsedCache
+		maxSize: maxSize! !
 
-!LRUCache methodsFor: 'accessing' stamp: 'ess 12/7/2024 10:17:56'!
+!LeastRecentlyUsedCache methodsFor: 'accessing' stamp: 'ess 4/3/2025 06:49:47'!
 at: aKey ifAbsentPut: aBlock
 
 	| dictionary |
 	dictionary := self cache.
-	^dictionary
+	^ dictionary
 		at: aKey
-		ifAbsent:
-			[[dictionary size >= maxSize] whileTrue:
-				[dictionary removeKey: dictionary keysSortedSafely first].
+		ifAbsent: [
+			[ dictionary size >= maxSize ] whileTrue: [
+				dictionary removeKey: dictionary keysSortedSafely first ].
 			dictionary
 				atLast: aKey
-				put: aBlock value]! !
+				put: aBlock value ]! !
 
-!LRUCache methodsFor: 'private' stamp: 'ess 12/7/2024 10:13:21'!
+!LeastRecentlyUsedCache methodsFor: 'private' stamp: 'ess 4/3/2025 06:50:04'!
 cache
 
-	^cache ifNil: [cache := OrderedDictionary new]! !
+	^ cache ifNil: [
+		cache := OrderedDictionary new ]! !
 
-!LRUCache methodsFor: 'private' stamp: 'ess 12/7/2024 10:12:45'!
+!LeastRecentlyUsedCache methodsFor: 'private' stamp: 'ess 4/3/2025 06:50:11'!
 setMaxSize: anInteger
 
 	maxSize := anInteger.
-	^self! !
+	^ self! !
 
-!LRUCache class methodsFor: 'instance creation' stamp: 'ess 12/7/2024 10:12:27'!
+!LeastRecentlyUsedCache class methodsFor: 'instance creation' stamp: 'ess 4/3/2025 08:05:19'!
 maxSize: anInteger
 
-	^self new setMaxSize: anInteger! !
+	^ self new
+		setMaxSize: anInteger! !
 
-!PackageData methodsFor: 'accessing' stamp: 'ess 12/4/2024 08:40:46'!
+!PackageData methodsFor: 'accessing' stamp: 'ess 4/3/2025 06:50:29'!
 baseDataDirectory
 
-	^self packageDirectory parent / 'Data'! !
+	^ self packageDirectory parent / 'Data'! !
 
-!PackageData methodsFor: 'accessing' stamp: 'ess 12/4/2024 08:40:40'!
+!PackageData methodsFor: 'accessing' stamp: 'ess 4/3/2025 06:50:34'!
 dataDirectory
 
-	^self baseDataDirectory / self packageName! !
+	^ self baseDataDirectory / self packageName! !
 
-!PackageData methodsFor: 'accessing' stamp: 'ess 12/4/2024 08:41:06'!
+!PackageData methodsFor: 'accessing' stamp: 'ess 4/3/2025 06:50:38'!
 package
 
-	^package! !
+	^ package! !
 
-!PackageData methodsFor: 'accessing' stamp: 'ess 12/4/2024 08:40:52'!
+!PackageData methodsFor: 'accessing' stamp: 'ess 4/3/2025 06:50:43'!
 packageDirectory
 
-	^self package packageDirectory! !
+	^ self package packageDirectory! !
 
-!PackageData methodsFor: 'accessing' stamp: 'ess 12/4/2024 08:41:15'!
+!PackageData methodsFor: 'accessing' stamp: 'ess 4/3/2025 06:50:48'!
 packageName
 
-	^self package packageName! !
+	^ self package packageName! !
 
-!PackageData methodsFor: 'private' stamp: 'ess 12/4/2024 08:40:22'!
+!PackageData methodsFor: 'private' stamp: 'ess 4/3/2025 06:50:22'!
 setClass: aClass
 
 	package := CodePackage
 		packageOfClass: aClass
-		ifNone: [nil].
-	^self! !
+		ifNone: [ nil ].
+	^ self! !
 
-!PackageData class methodsFor: 'accessing' stamp: 'ess 12/4/2024 08:39:33'!
+!PackageData class methodsFor: 'accessing' stamp: 'ess 4/3/2025 06:50:54'!
 dataDirectoryFor: aClass
 
-	^(self forClass: aClass) dataDirectory! !
+	^ (self forClass: aClass) dataDirectory! !
 
-!PackageData class methodsFor: 'instance creation' stamp: 'ess 12/4/2024 08:39:40'!
+!PackageData class methodsFor: 'instance creation' stamp: 'ess 4/3/2025 06:51:03'!
 forClass: aClass
 
-	^self new setClass: aClass! !
+	^ self new
+		setClass: aClass! !
 
 !Unicode methodsFor: 'accessing' stamp: 'ess 11/21/2024 04:48:37'!
 at: aCodepoint hasProperty: propertyName
@@ -1593,20 +1583,20 @@ fullFold: codepoints
 
 	^ caseFolding fullFold: codepoints! !
 
-!Unicode methodsFor: 'accessing' stamp: 'ess 12/6/2024 15:11:37'!
+!Unicode methodsFor: 'accessing' stamp: 'ess 4/3/2025 06:52:30'!
 generalCategory: categoryNameOrAlias
 
-	^unicodeData generalCategory: categoryNameOrAlias! !
+	^ unicodeData generalCategory: categoryNameOrAlias! !
 
-!Unicode methodsFor: 'accessing' stamp: 'ess 12/7/2024 10:51:56'!
+!Unicode methodsFor: 'accessing' stamp: 'ess 4/3/2025 06:52:07'!
 property: propertyName
 
-	^propList property: propertyName! !
+	^ propList property: propertyName! !
 
-!Unicode methodsFor: 'accessing' stamp: 'ess 12/7/2024 10:52:05'!
+!Unicode methodsFor: 'accessing' stamp: 'ess 4/3/2025 06:52:13'!
 propertyAt: propertyName ifAbsent: exceptionBlock
 
-	^propList
+	^ propList
 		propertyAt: propertyName
 		ifAbsent: exceptionBlock! !
 
@@ -1630,9 +1620,10 @@ simpleUppercaseMappingAt: aCodepoint
 
 	^ unicodeData simpleUppercaseMappingAt: aCodepoint! !
 
-!Unicode methodsFor: 'initialization' stamp: 'ess 12/7/2024 10:25:20'!
+!Unicode methodsFor: 'initialization' stamp: 'ess 6/2/2025 08:51:34'!
 initialize
 
+	super initialize.
 	caseFolding := CaseFolding new.
 	propList := PropList new.
 	unicodeData := CachingUnicodeData new! !
@@ -1644,20 +1635,21 @@ loadTables
 	propList loadTable.
 	unicodeData loadTable! !
 
-!Unicode class methodsFor: 'instance creation' stamp: 'ess 12/7/2024 12:04:43'!
+!Unicode class methodsFor: 'instance creation' stamp: 'ess 4/3/2025 06:51:14'!
 current
 
-	^current ifNil: [current := self load]! !
+	^ current ifNil: [
+		current := self load ]! !
 
-!Unicode class methodsFor: 'instance creation' stamp: 'ess 12/7/2024 11:55:55'!
+!Unicode class methodsFor: 'instance creation' stamp: 'ess 4/3/2025 06:51:20'!
 doesNotUnderstand: aMessage
 
-	^aMessage sendTo: self current! !
+	^ aMessage sendTo: self current! !
 
-!Unicode class methodsFor: 'instance creation' stamp: 'ess 12/7/2024 12:06:23'!
+!Unicode class methodsFor: 'instance creation' stamp: 'ess 4/3/2025 06:51:26'!
 load
 
-	^self new
+	^ self new
 		loadTables;
 		yourself! !
 
@@ -1666,229 +1658,222 @@ unload
 
 	current := nil! !
 
-!UnicodeDatabase methodsFor: 'enumerating' stamp: 'ess 12/4/2024 08:44:03'!
+!UnicodeDatabase methodsFor: 'enumerating' stamp: 'ess 4/3/2025 06:53:37'!
 do: aBinaryBlock
 
-	self dataFile readStreamDo:
-		[:stream |
-		[stream atEnd] whileFalse:
-			[(self nextRow: stream)
-				ifNotNil:
-					[:rowFields |
-					self
-						publishRows: rowFields
-						to: aBinaryBlock]]]! !
+	self dataFile readStreamDo: [ :stream |
+		[ stream atEnd ] whileFalse: [
+			(self nextRow: stream) ifNotNil: [ :rowFields |
+				self
+					publishRows: rowFields
+					to: aBinaryBlock ] ] ]! !
 
-!UnicodeDatabase methodsFor: 'private' stamp: 'ess 12/4/2024 08:43:19'!
+!UnicodeDatabase methodsFor: 'private' stamp: 'ess 4/3/2025 06:52:57'!
 dataFile
 
-	^(PackageData dataDirectoryFor: self class) // filename! !
+	^ (PackageData dataDirectoryFor: self class) // filename! !
 
-!UnicodeDatabase methodsFor: 'private' stamp: 'ess 12/4/2024 08:45:42'!
+!UnicodeDatabase methodsFor: 'private' stamp: 'ess 6/4/2025 15:21:35'!
 nextRow: aStream
 
-	| line |
+	| line field |
 	line := self stripComment: aStream nextLine.
-	line isEmpty ifTrue: [^nil].
-	^(line substringsSeparatedBy: $;) collect:
-		[:each | | field |
+	line isEmpty ifTrue: [
+		^ nil ].
+	^ (line substringsSeparatedBy: $;) collect: [ :each |
 		field := each withBlanksTrimmed.
-		field notEmpty
-			ifTrue: [field]
-			ifFalse: [nil]]! !
+		field notEmpty ifTrue: [ field ] ]! !
 
-!UnicodeDatabase methodsFor: 'private' stamp: 'ess 12/7/2024 08:24:15'!
+!UnicodeDatabase methodsFor: 'private' stamp: 'ess 4/3/2025 06:55:07'!
 publishRows: rowFields to: aBinaryBlock
 
 	| codepointField rangeSeparator rangeStart rangeEnd |
 	codepointField := rowFields at: 1.
 	rangeSeparator := codepointField indexOf: $..
-	rangeSeparator isZero
-		ifTrue: [ | codepoint |
-				codepoint := CodePoint fromHex: codepointField.
-				^ aBinaryBlock
-					value: codepoint
-					value: rowFields ].
-
-	rangeStart := CodePoint fromHex: (codepointField
-										copyFrom: 1
-										to: rangeSeparator - 1).
-	rangeEnd := CodePoint fromHex: (codepointField
-										copyFrom: rangeSeparator + 2
-										to: codepointField size).
-	rangeStart to: rangeEnd do:
-		[ :codepoint |
+	rangeSeparator = 0 ifTrue: [
+		| codepoint |
+		codepoint := Codepoint fromHex: codepointField.
+		^ aBinaryBlock
+			value: codepoint
+			value: rowFields ].
+	rangeStart := Codepoint fromHex:
+		(codepointField
+			copyFrom: 1
+			to: rangeSeparator - 1).
+	rangeEnd := Codepoint fromHex:
+		(codepointField
+			copyFrom: rangeSeparator + 2
+			to: codepointField size).
+	rangeStart to: rangeEnd do: [ :codepoint |
 		aBinaryBlock
 			value: codepoint
 			value: rowFields ]! !
 
-!UnicodeDatabase methodsFor: 'private' stamp: 'ess 12/4/2024 08:43:28'!
+!UnicodeDatabase methodsFor: 'private' stamp: 'ess 4/3/2025 06:55:15'!
 setFilename: aString
 
 	filename := aString.
-	^self! !
+	^ self! !
 
-!UnicodeDatabase methodsFor: 'private' stamp: 'ess 12/4/2024 08:46:25'!
+!UnicodeDatabase methodsFor: 'private' stamp: 'ess 4/3/2025 06:55:34'!
 stripComment: aString
 
 	| commentStart uncommented |
 	commentStart := aString indexOf: $#.
-	uncommented := commentStart isZero
-		ifTrue: [aString]
-		ifFalse: [aString truncateTo: commentStart - 1].
-	^uncommented withBlanksTrimmed! !
+	uncommented := commentStart = 0
+		ifTrue: [ aString ]
+		ifFalse: [ aString truncateTo: commentStart - 1 ].
+	^ uncommented withBlanksTrimmed! !
 
-!UnicodeDatabase class methodsFor: 'instance creation' stamp: 'ess 12/7/2024 12:29:23'!
+!UnicodeDatabase class methodsFor: 'instance creation' stamp: 'ess 4/3/2025 06:52:45'!
 filename: aString
 
-	^self new
+	^ self new
 		setFilename: aString! !
 
-!UnicodeDatabase class methodsFor: 'instance creation' stamp: 'ess 12/7/2024 12:29:15'!
+!UnicodeDatabase class methodsFor: 'instance creation' stamp: 'ess 4/3/2025 06:52:49'!
 table: aClass
 
-	^self filename: aClass filename! !
+	^ self filename: aClass filename! !
 
-!UnicodeTable methodsFor: 'accessing' stamp: 'ess 12/7/2024 12:28:58'!
-at: aCodePoint putFields: rowFields
-
-	^self subclassResponsibility! !
-
-!UnicodeTable methodsFor: 'initialization' stamp: 'ess 11/20/2024 22:34:19'!
-loadTable
-
-	| table |
-	
-	table := UnicodeDatabase table: self class.
-	table do: [ :codepoint :rowFields |
-				self
-					at: codepoint
-					putFields: rowFields ]! !
-
-!UnicodeTable class methodsFor: 'accessing' stamp: 'ess 12/4/2024 08:42:38'!
-filename
-
-	^self name, '.txt'! !
-
-!CaseFolding methodsFor: 'accessing' stamp: 'ess 12/7/2024 10:06:47'!
-fullFold: aSequenceOfCodepoints
-
-	^ CodePointArray streamContents:
-		[ :stream | self
-					fullFold: aSequenceOfCodepoints
-					on: stream ]! !
-
-!CaseFolding methodsFor: 'accessing' stamp: 'ess 11/20/2024 21:43:24'!
-fullFold: aSequenceOfCodepoints on: aStream
-
-	aSequenceOfCodepoints
-		do: [ :each |
-			self
-				fullFoldCodepoint: each
-				on: aStream ]! !
-
-!CaseFolding methodsFor: 'accessing' stamp: 'ess 12/7/2024 10:06:47'!
-simpleFold: aSequenceOfCodepoints
-
-	^ CodePointArray streamContents:
-		[ :stream | self
-					simpleFold: aSequenceOfCodepoints
-					on: stream ]! !
-
-!CaseFolding methodsFor: 'accessing' stamp: 'ess 11/20/2024 22:01:24'!
-simpleFold: aSequenceOfCodepoints on: aStream
-
-	aSequenceOfCodepoints
-		do: [ :each |
-			self
-				simpleFoldCodepoint: each
-				on: aStream ]! !
-
-!CaseFolding methodsFor: 'private' stamp: 'ess 12/7/2024 08:24:15'!
+!UnicodeTable methodsFor: 'accessing' stamp: 'ess 4/3/2025 07:49:58'!
 at: aCodepoint putFields: rowFields
 
-	| status mapping lengthIndex |
-	status := (rowFields at: 2) at: 1.
-	mapping := (rowFields at: 3) substrings
-				collect: [ :each | CodePoint fromHex: each ].
-				
-	('CS' includes: status)
-		ifTrue: [ simple
-					at: aCodepoint
-					put: (mapping at: 1) ].
-				
-	lengthIndex := mappings addMapping: mapping.
+	^ self subclassResponsibility! !
 
-	('CF' includes: status)
-		ifTrue: [ full
-					at: aCodepoint
-					put: lengthIndex ].
-				
-	status == $T
-		ifTrue: [ turkish
-					at: aCodepoint
-					put: lengthIndex ]! !
+!UnicodeTable methodsFor: 'initialization' stamp: 'ess 4/3/2025 07:50:15'!
+loadTable
 
-!CaseFolding methodsFor: 'private' stamp: 'ess 11/20/2024 22:37:55'!
-fullFoldCodepoint: aCodepoint on: aStream
+	| table |	
+	table := UnicodeDatabase table: self class.
+	table do: [ :codepoint :rowFields |
+		self
+			at: codepoint
+			putFields: rowFields ]! !
 
-	| mapping |
-	mapping := full at: aCodepoint.
-	mapping ifNil: [ ^ aStream nextPut: (Unicode simpleLowercaseMappingAt: aCodepoint) ].
-	
-	mappings
-		mappingAt: mapping
-		do: [ :each | aStream nextPut: each ]! !
+!UnicodeTable class methodsFor: 'accessing' stamp: 'ess 4/3/2025 07:49:41'!
+filename
 
-!CaseFolding methodsFor: 'private' stamp: 'ess 11/20/2024 22:38:48'!
-simpleFoldCodepoint: aCodepoint on: aStream
+	^ self name, '.txt'! !
 
-	aStream nextPut: ((simple at: aCodepoint)
-						ifNil: [ Unicode simpleLowercaseMappingAt: aCodepoint ])! !
+!CaseFolding methodsFor: 'accessing' stamp: 'ess 4/3/2025 07:45:24'!
+fullFold: aSequenceOfCodepoints
 
-!CaseFolding methodsFor: 'initialization' stamp: 'ess 11/20/2024 22:07:54'!
+	^ CodepointArray streamContents: [ :stream |
+		self
+			fullFold: aSequenceOfCodepoints
+			on: stream ]! !
+
+!CaseFolding methodsFor: 'accessing' stamp: 'ess 4/3/2025 07:45:37'!
+fullFold: aSequenceOfCodepoints on: aStream
+
+	aSequenceOfCodepoints do: [ :each |
+		self
+			fullFoldCodepoint: each
+			on: aStream ]! !
+
+!CaseFolding methodsFor: 'accessing' stamp: 'ess 4/3/2025 07:45:52'!
+simpleFold: aSequenceOfCodepoints
+
+	^ CodepointArray streamContents: [ :stream |
+		self
+			simpleFold: aSequenceOfCodepoints
+			on: stream ]! !
+
+!CaseFolding methodsFor: 'accessing' stamp: 'ess 4/3/2025 07:46:04'!
+simpleFold: aSequenceOfCodepoints on: aStream
+
+	aSequenceOfCodepoints do: [ :each |
+		self
+			simpleFoldCodepoint: each
+			on: aStream ]! !
+
+!CaseFolding methodsFor: 'initialization' stamp: 'ess 6/2/2025 08:53:34'!
 initialize
 
+	super initialize.
 	mappings := CodepointMappings new.
 	full := UnicodeLookup new.
 	simple := UnicodeLookup new.
 	turkish := UnicodeLookup new! !
 
-!PropList methodsFor: 'as yet unclassified' stamp: 'ess 12/7/2024 10:51:39'!
-at: aCodePoint hasProperty: propertyName
+!CaseFolding methodsFor: 'private' stamp: 'ess 6/4/2025 15:25:48'!
+at: aCodepoint putFields: rowFields
 
-	^(self
-		propertyAt: propertyName
-		ifAbsent: [^false])
-			includes: aCodePoint! !
+	| status mapping lengthIndex |
+	status := (rowFields at: 2) at: 1.
+	mapping := (rowFields at: 3) substrings
+		collect: [ :each | Codepoint fromHex: each ].				
+	('CS' includes: status) ifTrue: [
+		simple
+			at: aCodepoint
+			put: (mapping at: 1) ].
+	lengthIndex := mappings addMapping: mapping.
+	('CF' includes: status) ifTrue: [
+		full
+			at: aCodepoint
+			put: lengthIndex ].
+	status = $T ifTrue: [
+		turkish
+			at: aCodepoint
+			put: lengthIndex ]! !
 
-!PropList methodsFor: 'as yet unclassified' stamp: 'ess 12/7/2024 10:50:57'!
+!CaseFolding methodsFor: 'private' stamp: 'ess 4/3/2025 07:47:35'!
+fullFoldCodepoint: aCodepoint on: aStream
+
+	| mapping |
+	mapping := full at: aCodepoint.
+	mapping ifNil: [
+		aStream nextPut: (Unicode simpleLowercaseMappingAt: aCodepoint).
+		^ self ].
+	mappings
+		mappingAt: mapping
+		do: [ :each |
+			aStream nextPut: each ]! !
+
+!CaseFolding methodsFor: 'private' stamp: 'ess 4/3/2025 07:45:08'!
+simpleFoldCodepoint: aCodepoint on: aStream
+
+	aStream nextPut:
+		((simple at: aCodepoint) ifNil: [
+			Unicode simpleLowercaseMappingAt: aCodepoint ])! !
+
+!PropList methodsFor: 'accessing' stamp: 'ess 4/3/2025 07:41:22'!
 at: aCodePoint putFields: rowFields
 
 	| name |
 	name := rowFields at: 2.
-	(name is: 'Other_' substringAt: 1) ifTrue: [^self].
+	(name is: 'Other_' substringAt: 1) ifTrue: [
+		^ self ].
 	(properties
 		at: name asSymbol
-		ifAbsentPut: [UnicodeBitmap new])
+		ifAbsentPut: [ UnicodeBitmap new ])
 			add: aCodePoint! !
 
-!PropList methodsFor: 'as yet unclassified' stamp: 'ess 11/21/2024 01:46:54'!
+!PropList methodsFor: 'as yet unclassified' stamp: 'ess 4/3/2025 07:41:02'!
+at: aCodepoint hasProperty: propertyName
+
+	^ (self
+		propertyAt: propertyName
+		ifAbsent: [ ^ false ])
+			includes: aCodepoint! !
+
+!PropList methodsFor: 'as yet unclassified' stamp: 'ess 4/3/2025 07:41:30'!
+property: propertyName
+
+	^ properties at: propertyName! !
+
+!PropList methodsFor: 'as yet unclassified' stamp: 'ess 4/3/2025 07:41:36'!
+propertyAt: propertyName ifAbsent: exceptionBlock
+
+	^ properties
+		at: propertyName
+		ifAbsent: exceptionBlock! !
+
+!PropList methodsFor: 'initialization' stamp: 'ess 11/21/2024 01:46:54'!
 initialize
 
 	properties := IdentityDictionary new! !
-
-!PropList methodsFor: 'as yet unclassified' stamp: 'ess 12/6/2024 16:06:14'!
-property: propertyName
-
-	^properties at: propertyName! !
-
-!PropList methodsFor: 'as yet unclassified' stamp: 'ess 12/6/2024 16:06:20'!
-propertyAt: propertyName ifAbsent: exceptionBlock
-
-	^properties
-		at: propertyName
-		ifAbsent: exceptionBlock! !
 
 !UnicodeData methodsFor: 'accessing' stamp: 'ess 11/20/2024 23:08:19'!
 canonicalCombiningClassAt: aCodepoint
@@ -1905,16 +1890,18 @@ canonicallyDecompose: aSequenceOfCodepoints
 
 	^ decomposition canonicallyDecompose: aSequenceOfCodepoints! !
 
-!UnicodeData methodsFor: 'accessing' stamp: 'ess 12/7/2024 10:23:13'!
+!UnicodeData methodsFor: 'accessing' stamp: 'ess 5/31/2025 06:58:45'!
 generalCategory: categoryNameOrAlias
 
 	| wantedCategories |
 	wantedCategories := self generalCategoryAliases 
 		at: categoryNameOrAlias
-		ifAbsent: [IdentitySet with: categoryNameOrAlias].
-	^wantedCategories
+		ifAbsent: [
+			IdentitySet with: categoryNameOrAlias ].
+	^ wantedCategories
 		inject: UnicodeBitmap new
-		into: [:sum :each | sum | (categories at: each)]! !
+		into: [ :sum :each |
+			sum | (categories at: each) ]! !
 
 !UnicodeData methodsFor: 'accessing' stamp: 'ess 11/20/2024 23:09:07'!
 simpleLowercaseMappingAt: aCodepoint
@@ -1931,214 +1918,219 @@ simpleUppercaseMappingAt: aCodepoint
 
 	^ (uppercase at: aCodepoint) ifNil: [ aCodepoint ]! !
 
-!UnicodeData methodsFor: 'constants' stamp: 'ess 12/6/2024 14:35:58'!
+!UnicodeData methodsFor: 'constants' stamp: 'ess 4/3/2025 07:33:33'!
 generalCategories
 	"https://www.unicode.org/Public/UNIDATA/PropertyValueAliases.txt"
 
-	^`#(
+	^ `#(
 		"Other"
-		Cc  "Control, a C0 or C1 control code"
-		Cf  "Format"
-		Cn  "Unassigned"
-		Co  "Private_Use"
-		Cs  "Surrogate"
+		Cc	"Control, a C0 or C1 control code"
+		Cf	"Format"
+		Cn	"Unassigned"
+		Co	"Private_Use"
+		Cs	"Surrogate"
 
 		"Letter"
-		Ll  "Lowercase_Letter"
-		Lm  "Modifier_Letter"
-		Lo  "Other_Letter, includes syllables and ideagraphs"
-		Lt  "Titlecase_Letter, a digraph with first part uppercase"
-		Lu  "Uppercase_Letter"
-		
+		Ll	"Lowercase_Letter"
+		Lm	"Modifier_Letter"
+		Lo	"Other_Letter, includes syllables and ideagraphs"
+		Lt	"Titlecase_Letter, a digraph with first part uppercase"
+		Lu	"Uppercase_Letter"
+
 		"Mark"
-		Mc  "Spacing_Mark, positive advance width"
-		Me  "Enclosing_Mark"
-		Mn  "Nonspacing_Mark, zero advance width"
-		
+		Mc	"Spacing_Mark, positive advance width"
+		Me	"Enclosing_Mark"
+		Mn	"Nonspacing_Mark, zero advance width"
+
 		"Number"
-		Nd  "Decimal_Number"
-		Nl  "Letter_Number"
-		No  "Other_Number"
-		
+		Nd	"Decimal_Number"
+		Nl	"Letter_Number"
+		No	"Other_Number"
+
 		"Punctuation"
-		Pc  "Connector_Punctuation"
-		Pd  "Dash_Punctuation"
-		Pe  "Close_Punctuation, of a pair"
-		Pf  "Final_Punctuation, final quotation mark"
-		Pi  "Initial_Punctuation, initial quotation mark"
-		Po  "Other_Punctuation"
-		Ps  "Open_Punctuation, of a pair"
-		
+		Pc	"Connector_Punctuation"
+		Pd	"Dash_Punctuation"
+		Pe	"Close_Punctuation, of a pair"
+		Pf	"Final_Punctuation, final quotation mark"
+		Pi	"Initial_Punctuation, initial quotation mark"
+		Po	"Other_Punctuation"
+		Ps	"Open_Punctuation, of a pair"
+
 		"Symbol"
-		Sc  "Currency_Symbol"
-		Sk  "Modifier_Symbol"
-		Sm  "Math_Symbol"
-		So  "Other_Symbol"
-		
+		Sc	"Currency_Symbol"
+		Sk	"Modifier_Symbol"
+		Sm	"Math_Symbol"
+		So	"Other_Symbol"
+
 		"Separator"
-		Zl  "Line_Separator, U+2028 LINE SEPARATOR"
-		Zp  "Paragraph_Separator, U+2029 PARAGRAPH SEPARATOR"
-		Zs  "Space_Separator, non-zero width"
+		Zl	"Line_Separator, U+2028 LINE SEPARATOR"
+		Zp	"Paragraph_Separator, U+2029 PARAGRAPH SEPARATOR"
+		Zs	"Space_Separator, non-zero width"
 	) asIdentitySet`! !
 
-!UnicodeData methodsFor: 'constants' stamp: 'ess 12/6/2024 14:38:27'!
+!UnicodeData methodsFor: 'constants' stamp: 'ess 5/31/2025 06:56:20'!
 generalCategoryAliases
 	"https://www.unicode.org/Public/UNIDATA/PropertyValueAliases.txt"
 
-	^`{	#C -> #(Cc Cf Cn Co Cs) asIdentitySet.
-		#Other -> #(Cc Cf Cn Co Cs) asIdentitySet.
-		#Control -> #(Cc) asIdentitySet.
-		#cntrl -> #(Cc) asIdentitySet.
-		#Format -> #(Cf) asIdentitySet.
-		#Unassigned -> #(Cn) asIdentitySet.
-		#Private_Use -> #(Co) asIdentitySet.
-		#Surrogate -> #(Cs) asIdentitySet.
-		#L -> #(Ll Lm Lo Lt Lu) asIdentitySet.
-		#Letter -> #(Ll Lm Lo Lt Lu) asIdentitySet.
-		#LC -> #(Ll Lt Lu) asIdentitySet.
-		#Cased_Letter -> #(Ll Lt Lu) asIdentitySet.
-		#Lowercase_Letter -> #(Ll) asIdentitySet.
-		#Modifier_Letter -> #(Lm) asIdentitySet.
-		#Other_Letter -> #(Lo) asIdentitySet.
-		#Titlecase_Letter -> #(Lt) asIdentitySet.
-		#Uppercase_Letter -> #(Lu) asIdentitySet.
-		#M -> #(Mc Me Mn) asIdentitySet.
-		#Mark -> #(Mc Me Mn) asIdentitySet.
-		#Combining_Mark -> #(Mc Me Mn) asIdentitySet.
-		#Spacing_Mark -> #(Mc) asIdentitySet.
-		#Enclosing_Mark -> #(Me) asIdentitySet.
-		#Nonspacing_Mark -> #(Mn) asIdentitySet.
-		#N -> #(Nd Nl No) asIdentitySet.
-		#Number -> #(Nd Nl No) asIdentitySet.
-		#Decimal_Number -> #(Nd) asIdentitySet.
-		#digit -> #(Nd) asIdentitySet.
-		#Letter_Number -> #(Nl) asIdentitySet.
-		#Other_Number -> #(No) asIdentitySet.
-		#P -> #(Pc Pd Pe Pf Pi Po Ps) asIdentitySet.
-		#Punctuation -> #(Pc Pd Pe Pf Pi Po Ps) asIdentitySet.
-		#punct -> #(Pc Pd Pe Pf Pi Po Ps) asIdentitySet.
-		#Connector_Punctuation -> #(Pc) asIdentitySet.
-		#Dash_Punctuation -> #(Pd) asIdentitySet.
-		#Close_Punctuation -> #(Pe) asIdentitySet.
-		#Final_Punctuation -> #(Pf) asIdentitySet.
-		#Initial_Punctuation -> #(Pi) asIdentitySet.
-		#Other_Punctuation -> #(Po) asIdentitySet.
-		#Open_Punctutation -> #(Ps) asIdentitySet.
-		#S -> #(Sc Sk Sm So) asIdentitySet.
-		#Symbol -> #(Sc Sk Sm So) asIdentitySet.
-		#Currency_Symbol -> #(Sc) asIdentitySet.
-		#Modifier_Symbol -> #(Sk) asIdentitySet.
-		#Math_Symbol -> #(Sm) asIdentitySet.
-		#Other_Symbol -> #(So) asIdentitySet.
-		#Z -> #(Zl Zp Zs) asIdentitySet.
-		#Separator -> #(Zl Zp Zs) asIdentitySet.
-		#Line_Separator -> #(Zl) asIdentitySet.
-		#Paragraph_Separator -> #(Zp) asIdentitySet.
-		#Space_Separator -> #(Zs) asIdentitySet
+	^ `{
+		#C							-> #(Cc Cf Cn Co Cs) asIdentitySet .
+		#Other						-> #(Cc Cf Cn Co Cs) asIdentitySet .
+		#Control					-> #(Cc) asIdentitySet .
+		#cntrl						-> #(Cc) asIdentitySet .
+		#Format					-> #(Cf) asIdentitySet .
+		#Unassigned				-> #(Cn) asIdentitySet .
+		#Private_Use				-> #(Co) asIdentitySet .
+		#Surrogate					-> #(Cs) asIdentitySet .
+		#L							-> #(Ll Lm Lo Lt Lu) asIdentitySet .
+		#Letter						-> #(Ll Lm Lo Lt Lu) asIdentitySet .
+		#LC						-> #(Ll Lt Lu) asIdentitySet .
+		#Cased_Letter				-> #(Ll Lt Lu) asIdentitySet .
+		#Lowercase_Letter			-> #(Ll) asIdentitySet .
+		#Modifier_Letter			-> #(Lm) asIdentitySet .
+		#Other_Letter				-> #(Lo) asIdentitySet .
+		#Titlecase_Letter			-> #(Lt) asIdentitySet .
+		#Uppercase_Letter			-> #(Lu) asIdentitySet .
+		#M							-> #(Mc Me Mn) asIdentitySet .
+		#Mark						-> #(Mc Me Mn) asIdentitySet .
+		#Combining_Mark			-> #(Mc Me Mn) asIdentitySet .
+		#Spacing_Mark				-> #(Mc) asIdentitySet .
+		#Enclosing_Mark			-> #(Me) asIdentitySet .
+		#Nonspacing_Mark			-> #(Mn) asIdentitySet .
+		#N							-> #(Nd Nl No) asIdentitySet .
+		#Number					-> #(Nd Nl No) asIdentitySet .
+		#Decimal_Number			-> #(Nd) asIdentitySet .
+		#digit						-> #(Nd) asIdentitySet .
+		#Letter_Number			-> #(Nl) asIdentitySet .
+		#Other_Number			-> #(No) asIdentitySet .
+		#P							-> #(Pc Pd Pe Pf Pi Po Ps) asIdentitySet .
+		#Punctuation				-> #(Pc Pd Pe Pf Pi Po Ps) asIdentitySet .
+		#punct						-> #(Pc Pd Pe Pf Pi Po Ps) asIdentitySet .
+		#Connector_Punctuation	-> #(Pc) asIdentitySet .
+		#Dash_Punctuation		-> #(Pd) asIdentitySet .
+		#Close_Punctuation		-> #(Pe) asIdentitySet .
+		#Final_Punctuation			-> #(Pf) asIdentitySet .
+		#Initial_Punctuation		-> #(Pi) asIdentitySet .
+		#Other_Punctuation		-> #(Po) asIdentitySet .
+		#Open_Punctutation		-> #(Ps) asIdentitySet .
+		#S							-> #(Sc Sk Sm So) asIdentitySet .
+		#Symbol					-> #(Sc Sk Sm So) asIdentitySet .
+		#Currency_Symbol			-> #(Sc) asIdentitySet .
+		#Modifier_Symbol			-> #(Sk) asIdentitySet .
+		#Math_Symbol				-> #(Sm) asIdentitySet .
+		#Other_Symbol				-> #(So) asIdentitySet .
+		#Z							-> #(Zl Zp Zs) asIdentitySet .
+		#Separator					-> #(Zl Zp Zs) asIdentitySet .
+		#Line_Separator			-> #(Zl) asIdentitySet .
+		#Paragraph_Separator		-> #(Zp) asIdentitySet .
+		#Space_Separator			-> #(Zs) asIdentitySet
 	} asDictionary`! !
 
-!UnicodeData methodsFor: 'initialization' stamp: 'ess 12/7/2024 10:23:27'!
+!UnicodeData methodsFor: 'initialization' stamp: 'ess 4/3/2025 07:36:35'!
 initialize
 
-	name := UnicodeLookup new.  "Map codepoint to name"
-	nameLookup := Dictionary new.  "Map name to codepoint"
-	category := UnicodeLookup new.  "Map codepoint to general category"
-	categories := IdentityDictionary new.  "Map categories to codepoints"
-	combiningClass := UnicodeLookup new.  "Map codepoint to canonical combining class"
-	bidi := UnicodeLookup new.  "Map codepoint to BIDI class"
-	decomposition := DecompositionMappings new.  "Map between codepoints and decompositions"
+	name := UnicodeLookup new.					"Map codepoint to name"
+	nameLookup := Dictionary new.					"Map name to codepoint"
+	category := UnicodeLookup new.					"Map codepoint to general category"
+	categories := IdentityDictionary new.				"Map categories to codepoints"
+	combiningClass := UnicodeLookup new.			"Map codepoint to canonical combining class"
+	bidi := UnicodeLookup new.						"Map codepoint to BIDI class"
+	decomposition := DecompositionMappings new.	"Map between codepoints and decompositions"
 	decimalValue := UnicodeLookup new.
 	digitValue := UnicodeLookup new.
 	numericValue := UnicodeLookup new.
-	mirrored := UnicodeLookup new.  "Map codepoint to BIDI mirrored"
-	uppercase := UnicodeLookup new.  "Simple uppercase mapping"
-	lowercase := UnicodeLookup new.  "Simple lowercase mapping"
-	titlecase := UnicodeLookup new  "Simple titlecase mapping"! !
+	mirrored := UnicodeLookup new. 					"Map codepoint to BIDI mirrored"
+	uppercase := UnicodeLookup new.				"Simple uppercase mapping"
+	lowercase := UnicodeLookup new.				"Simple lowercase mapping"
+	titlecase := UnicodeLookup new					"Simple titlecase mapping"! !
 
-!UnicodeData methodsFor: 'initialization' stamp: 'ess 11/20/2024 22:52:48'!
+!UnicodeData methodsFor: 'initialization' stamp: 'ess 4/3/2025 07:49:14'!
 loadTable
 
 	| table rangeStart |
 	table := UnicodeDatabase table: self class.
-	table
-		do: [ :codepoint :rowFields | | nameField |
-			nameField := rowFields at: 2.
-			((nameField includesSubString: 'Private Use')
-					or: [ nameField includesSubString: 'Surrogate' ])
-				ifFalse: [ (nameField endsWith: ', Last>')
-							ifFalse: [ (nameField endsWith: ', First>')
-										ifFalse: [ self at: codepoint putFields: rowFields ]
-										ifTrue: [ rangeStart := codepoint ] ]
-							ifTrue: [ rangeStart
-										to: codepoint
-										do: [ :point | self at: point putFields: rowFields ] ] ] ]! !
+	table do: [ :codepoint :rowFields |
+		| nameField |
+		nameField := rowFields at: 2.
+		((nameField includesSubString: 'Private Use')
+				or: [ nameField includesSubString: 'Surrogate' ])
+			ifFalse: [
+				(nameField endsWith: ', Last>')
+					ifFalse: [
+						(nameField endsWith: ', First>')
+								ifFalse: [ self at: codepoint putFields: rowFields ]
+								ifTrue: [ rangeStart := codepoint ] ]
+					ifTrue: [
+						rangeStart
+							to: codepoint
+							do: [ :point |
+								self at: point putFields: rowFields ] ] ] ]! !
 
-!UnicodeData methodsFor: 'private-accessing' stamp: 'ess 11/20/2024 20:27:56'!
+!UnicodeData methodsFor: 'private-accessing' stamp: 'ess 4/3/2025 07:36:55'!
 at: aCodepoint putBidiClass: aString
 
-	aString isEmptyOrNil
-		ifFalse: [ bidi
-					at: aCodepoint
-					put: aString asSymbol ]! !
+	aString isEmptyOrNil ifFalse: [
+		bidi
+			at: aCodepoint
+			put: aString asSymbol ]! !
 
-!UnicodeData methodsFor: 'private-accessing' stamp: 'ess 11/20/2024 20:28:03'!
+!UnicodeData methodsFor: 'private-accessing' stamp: 'ess 4/3/2025 07:37:08'!
 at: aCodepoint putBidiMirrored: aString
 
-	aString = 'Y'
-		ifTrue: [ mirrored
-					at: aCodepoint
-					put: true ]! !
+	aString = 'Y' ifTrue: [
+		mirrored
+			at: aCodepoint
+			put: true ]! !
 
-!UnicodeData methodsFor: 'private-accessing' stamp: 'ess 11/21/2024 01:27:17'!
+!UnicodeData methodsFor: 'private-accessing' stamp: 'ess 4/3/2025 07:37:32'!
 at: aCodepoint putCategory: aString
 
 	| symbol |
-
-	aString isEmptyOrNil ifTrue: [ ^ self ].
+	aString isEmptyOrNil ifTrue: [
+		^ self ].
 
 	"Map codepoint to category."
 	symbol := aString asSymbol.
 	category
 		at: aCodepoint
 		put: symbol.
-		
+	
 	"Map category to codepoint."
 	(categories
 		at: symbol
 		ifAbsentPut: [ UnicodeBitmap new ])
 			add: aCodepoint! !
 
-!UnicodeData methodsFor: 'private-accessing' stamp: 'ess 11/20/2024 20:17:38'!
+!UnicodeData methodsFor: 'private-accessing' stamp: 'ess 4/3/2025 07:37:47'!
 at: aCodepoint putCombiningClass: aString
 
-	aString isEmptyOrNil
-		ifFalse: [ combiningClass
-					at: aCodepoint
-					put: aString asNumber ]! !
+	aString isEmptyOrNil ifFalse: [
+		combiningClass
+			at: aCodepoint
+			put: aString asNumber ]! !
 
-!UnicodeData methodsFor: 'private-accessing' stamp: 'ess 11/21/2024 04:33:18'!
+!UnicodeData methodsFor: 'private-accessing' stamp: 'ess 4/3/2025 07:38:02'!
 at: aCodepoint putDecimalValue: aString
 
-	aString isEmptyOrNil
-		ifFalse: [ decimalValue
-					at: aCodepoint
-					put: aString asNumber ]! !
+	aString isEmptyOrNil ifFalse: [
+		decimalValue
+			at: aCodepoint
+			put: aString asNumber ]! !
 
-!UnicodeData methodsFor: 'private-accessing' stamp: 'ess 11/20/2024 20:28:39'!
+!UnicodeData methodsFor: 'private-accessing' stamp: 'ess 4/3/2025 07:38:15'!
 at: aCodepoint putDecomposition: aString
 
-	aString isEmptyOrNil
-		ifFalse: [ decomposition
-					at: aCodepoint
-					put: aString ]! !
+	aString isEmptyOrNil ifFalse: [
+		decomposition
+			at: aCodepoint
+			put: aString ]! !
 
-!UnicodeData methodsFor: 'private-accessing' stamp: 'ess 11/21/2024 04:33:29'!
+!UnicodeData methodsFor: 'private-accessing' stamp: 'ess 4/3/2025 07:38:30'!
 at: aCodepoint putDigitValue: aString
 
-	aString isEmptyOrNil
-		ifFalse: [ digitValue
-					at: aCodepoint
-					put: aString asNumber ]! !
+	aString isEmptyOrNil ifFalse: [
+		digitValue
+			at: aCodepoint
+			put: aString asNumber ]! !
 
 !UnicodeData methodsFor: 'private-accessing' stamp: 'ess 11/21/2024 04:31:44'!
 at: aCodepoint putFields: rowFields
@@ -2156,93 +2148,92 @@ at: aCodepoint putFields: rowFields
 	self at: aCodepoint putLowercaseMapping: (rowFields at: 14).
 	self at: aCodepoint putTitlecaseMapping: (rowFields at: 15)! !
 
-!UnicodeData methodsFor: 'private-accessing' stamp: 'ess 12/7/2024 08:24:15'!
+!UnicodeData methodsFor: 'private-accessing' stamp: 'ess 4/3/2025 07:38:49'!
 at: aCodepoint putLowercaseMapping: aString
 
-	aString isEmptyOrNil
-		ifFalse: [ lowercase
-					at: aCodepoint
-					put: (CodePoint fromHex: aString) ]! !
+	aString isEmptyOrNil ifFalse: [
+		lowercase
+			at: aCodepoint
+			put: (Codepoint fromHex: aString) ]! !
 
-!UnicodeData methodsFor: 'private-accessing' stamp: 'ess 11/20/2024 20:29:13'!
+!UnicodeData methodsFor: 'private-accessing' stamp: 'ess 4/3/2025 07:39:12'!
 at: aCodepoint putName: aString
 
-	(aString isEmptyOrNil or: [ (aString at: 1) == $< ])
-		ifFalse: [ name
-					at: aCodepoint
-					put: aString.
-				nameLookup
-					at: aString
-					put: aCodepoint ]! !
+	(aString isEmptyOrNil or: [ (aString at: 1) = $< ]) ifFalse: [
+		name
+			at: aCodepoint
+			put: aString.
+		nameLookup
+			at: aString
+			put: aCodepoint ]! !
 
-!UnicodeData methodsFor: 'private-accessing' stamp: 'ess 11/21/2024 04:33:38'!
+!UnicodeData methodsFor: 'private-accessing' stamp: 'ess 4/3/2025 07:39:26'!
 at: aCodepoint putNumericValue: aString
 
-	aString isEmptyOrNil
-		ifFalse: [ numericValue
-					at: aCodepoint
-					put: aString asNumber ]! !
+	aString isEmptyOrNil ifFalse: [
+		numericValue
+			at: aCodepoint
+			put: aString asNumber ]! !
 
-!UnicodeData methodsFor: 'private-accessing' stamp: 'ess 12/7/2024 08:24:15'!
+!UnicodeData methodsFor: 'private-accessing' stamp: 'ess 4/3/2025 07:39:40'!
 at: aCodepoint putTitlecaseMapping: aString
 
-	aString isEmptyOrNil
-		ifFalse: [ titlecase
-					at: aCodepoint
-					put: (CodePoint fromHex: aString) ]! !
+	aString isEmptyOrNil ifFalse: [
+		titlecase
+			at: aCodepoint
+			put: (Codepoint fromHex: aString) ]! !
 
-!UnicodeData methodsFor: 'private-accessing' stamp: 'ess 12/7/2024 08:24:15'!
+!UnicodeData methodsFor: 'private-accessing' stamp: 'ess 4/3/2025 07:39:53'!
 at: aCodepoint putUppercaseMapping: aString
 
-	aString isEmptyOrNil
-		ifFalse: [ uppercase
-					at: aCodepoint
-					put: (CodePoint fromHex: aString) ]! !
+	aString isEmptyOrNil ifFalse: [
+		uppercase
+			at: aCodepoint
+			put: (Codepoint fromHex: aString) ]! !
 
-!CachingUnicodeData methodsFor: 'accessing' stamp: 'ess 12/7/2024 10:22:23'!
+!CachingUnicodeData methodsFor: 'accessing' stamp: 'ess 5/31/2025 06:59:00'!
 generalCategory: categoryNameOrAlias
 
 	| nameOrAlias |
 	nameOrAlias := categoryNameOrAlias asSymbol.
-	^self generalCategoryCache
+	^ self generalCategoryCache
 		at: nameOrAlias
-		ifAbsentPut: [self lookupGeneralCategory: nameOrAlias]! !
+		ifAbsentPut: [
+			self lookupGeneralCategory: nameOrAlias ]! !
 
-!CachingUnicodeData methodsFor: 'private' stamp: 'ess 12/7/2024 10:24:36'!
+!CachingUnicodeData methodsFor: 'private' stamp: 'ess 4/3/2025 07:29:07'!
 generalCategoryCache
 
-	^generalCategoryCache ifNil: [generalCategoryCache := LookupCache lru: 25]! !
+	^ generalCategoryCache ifNil: [
+		generalCategoryCache := LookupCache leastRecentlyUsed: 25 ]! !
 
-!CachingUnicodeData methodsFor: 'private' stamp: 'ess 12/7/2024 10:21:26'!
+!CachingUnicodeData methodsFor: 'private' stamp: 'ess 4/3/2025 07:29:18'!
 lookupGeneralCategory: categoryNameOrAlias
 
-	^super generalCategory: categoryNameOrAlias! !
+	^ super generalCategory: categoryNameOrAlias! !
 
-!CachingUnicodeData class methodsFor: 'as yet unclassified' stamp: 'ess 12/7/2024 12:31:54'!
+!CachingUnicodeData class methodsFor: 'accessing' stamp: 'ess 4/3/2025 07:28:11'!
 filename
 
-	^'UnicodeData.txt'! !
+	^ 'UnicodeData.txt'! !
 
-!CharacterSequence methodsFor: '*Unicode-converting' stamp: 'ess 12/4/2024 14:56:14'!
+!CharacterSequence methodsFor: '*Unicode-converting' stamp: 'ess 5/31/2025 07:16:07'!
 caseFold
-	"Safe to answer with #fullCaseFold because caller is already expecting a string."
+	"Answer with #fullCaseFold because caller is already expecting a string."
 
-	^self fullCaseFold! !
+	^ self fullCaseFold! !
 
-!CharacterSequence methodsFor: '*Unicode-converting' stamp: 'ess 12/4/2024 14:56:26'!
+!CharacterSequence methodsFor: '*Unicode-converting' stamp: 'ess 5/31/2025 07:16:21'!
 fullCaseFold
 
-	^(Unicode fullFold: self asCodePoints) asString! !
+	^ (Unicode fullFold: self asCodePoints)
+		asString! !
 
-!CharacterSequence methodsFor: '*Unicode-converting' stamp: 'ess 12/4/2024 14:56:30'!
+!CharacterSequence methodsFor: '*Unicode-converting' stamp: 'ess 5/31/2025 07:17:23'!
 simpleCaseFold
 
-	^(Unicode simpleFold: self asCodePoints) asString! !
-
-!Character methodsFor: '*Unicode-converting' stamp: 'ess 11/15/2024 07:05:33'!
-asTitlecase
-
-	^ UnicodeData simpleTitlecaseMapping: self! !
+	^ (Unicode simpleFold: self asCodePoints)
+		asString! !
 
 !Character methodsFor: '*Unicode-converting' stamp: 'ess 11/15/2024 07:37:15'!
 caseFold
@@ -2250,14 +2241,16 @@ caseFold
 
 	^ self simpleCaseFold! !
 
-!Character methodsFor: '*Unicode-converting' stamp: 'ess 11/15/2024 07:02:48'!
+!Character methodsFor: '*Unicode-converting' stamp: 'ess 6/2/2025 08:59:02'!
 fullCaseFold
 	"Answer a string that is the full case-folded version of myself."
 
-	^ CaseFolding fullFold: self! !
+	^ Unicode fullFold: { self codePoint }! !
 
-!Character methodsFor: '*Unicode-converting' stamp: 'ess 11/15/2024 07:02:55'!
+!Character methodsFor: '*Unicode-converting' stamp: 'ess 6/2/2025 08:58:50'!
 simpleCaseFold
 	"Answer the character that is the simple case-folded version of myself."
 
-	^ CaseFolding simpleFold: self! !
+	| result |
+	result := Unicode simpleFold: { self codePoint }.
+	^ result first! !
