@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7259] on 5 June 2025 at 11:37:20 am'!
+'From Cuis7.5 [latest update: #7263] on 9 June 2025 at 11:26:45 am'!
 'Description '!
-!provides: 'Unicode' 1 1!
+!provides: 'Unicode' 1 2!
 !requires: 'Cuis-Base' 75 7259 nil!
 SystemOrganization addCategory: #Unicode!
 SystemOrganization addCategory: #'Unicode-Public'!
@@ -135,6 +135,16 @@ Object subclass: #PackageData
 	category: 'Unicode-Public'!
 !classDefinition: 'PackageData class' category: #'Unicode-Public'!
 PackageData class
+	instanceVariableNames: ''!
+
+!classDefinition: #RecursiveDescentParser category: #'Unicode-Public'!
+Object subclass: #RecursiveDescentParser
+	instanceVariableNames: 'input lookahead shift'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Unicode-Public'!
+!classDefinition: 'RecursiveDescentParser class' category: #'Unicode-Public'!
+RecursiveDescentParser class
 	instanceVariableNames: ''!
 
 !classDefinition: #Unicode category: #'Unicode-Public'!
@@ -1556,6 +1566,351 @@ forClass: aClass
 	^ self new
 		setClass: aClass! !
 
+!RecursiveDescentParser methodsFor: 'accessing' stamp: 'ess 6/6/2025 07:30:20'!
+input: aStringOrStream
+
+	input := aStringOrStream readStream.
+	self step! !
+
+!RecursiveDescentParser methodsFor: 'as yet unclassified' stamp: 'ess 6/6/2025 07:36:22'!
+syntaxError: aMessageString
+
+	^ self syntaxErrorClass
+		signal: aMessageString! !
+
+!RecursiveDescentParser methodsFor: 'as yet unclassified' stamp: 'ess 6/6/2025 07:35:59'!
+syntaxErrorClass
+
+	^ Error! !
+
+!RecursiveDescentParser methodsFor: 'backtracking' stamp: 'ess 6/6/2025 07:34:17'!
+restore
+
+	| saved |
+	saved := self unsave.
+	input position: saved first.
+	lookahead := saved second! !
+
+!RecursiveDescentParser methodsFor: 'backtracking' stamp: 'ess 6/6/2025 07:34:25'!
+save
+
+	shift addLast: { input position . lookahead }! !
+
+!RecursiveDescentParser methodsFor: 'backtracking' stamp: 'ess 6/6/2025 07:35:06'!
+unsave
+
+	shift isEmpty ifTrue: [
+		^ self error: self class name, ' internal error: restore without save' ].
+	^ shift removeLast! !
+
+!RecursiveDescentParser methodsFor: 'backtracking' stamp: 'ess 6/6/2025 07:35:13'!
+withSaveDo: aUnaryBlock
+
+	| didRestore restore |
+	didRestore := false.
+	restore := [
+		self restore.
+		didRestore := true ].
+	self save.
+	^ [ aUnaryBlock value: restore ]
+		ensure: [
+			didRestore ifFalse: [
+				self unsave ] ]! !
+
+!RecursiveDescentParser methodsFor: 'initialization' stamp: 'ess 6/6/2025 07:29:53'!
+initialize
+
+	super initialize.
+	shift := OrderedCollection new! !
+
+!RecursiveDescentParser methodsFor: 'parsing' stamp: 'ess 6/6/2025 07:29:17'!
+consume
+	"Update lookahead to the next character of the input, or nil.  Answer the old value of the lookahead."
+
+	| la |
+	la := lookahead ifNil: [
+		^ self syntaxError: 'Unexpected end of input' ].
+	self step.
+	^ la! !
+
+!RecursiveDescentParser methodsFor: 'parsing' stamp: 'ess 6/6/2025 07:29:25'!
+consumeDigit
+
+	self isDigit ifFalse: [
+		^ self syntaxError: 'Expected decimal digit' ].
+	^ self consume xDigitValue! !
+
+!RecursiveDescentParser methodsFor: 'parsing' stamp: 'ess 6/6/2025 07:29:30'!
+consumeXDigit
+
+	self isXDigit ifFalse: [
+		^ self syntaxError: 'Expected hexadecimal digit' ].
+	^ self consume xDigitValue! !
+
+!RecursiveDescentParser methodsFor: 'parsing' stamp: 'ess 6/6/2025 07:29:36'!
+expect: aCharacter
+
+	(self match: aCharacter) ifFalse: [
+		^ self syntaxError: 'Expected ', aCharacter asString ]! !
+
+!RecursiveDescentParser methodsFor: 'parsing' stamp: 'ess 6/6/2025 07:29:42'!
+expectAll: aSequence
+
+	(self matchAll: aSequence) ifFalse: [
+		^ self syntaxError: 'Expected ', aSequence asString ]! !
+
+!RecursiveDescentParser methodsFor: 'parsing' stamp: 'ess 6/6/2025 07:31:31'!
+lookahead
+
+	^ lookahead! !
+
+!RecursiveDescentParser methodsFor: 'parsing' stamp: 'ess 6/6/2025 07:31:35'!
+match: aCharacter
+	"Consume the next character only if it matches aCharacter.  Answer true if the match succeeded."
+
+	| isMatch |
+	isMatch := lookahead = aCharacter.
+	isMatch ifTrue: [
+		self consume ].
+	^ isMatch! !
+
+!RecursiveDescentParser methodsFor: 'parsing' stamp: 'ess 6/6/2025 07:31:42'!
+matchAll: aSequence
+
+	| isMatch |
+	^ self withSaveDo: [ :restore |
+		isMatch := aSequence
+			inject: true
+			into: [ :sum :each |
+				sum and: [ self match: each ] ].
+		isMatch ifFalse: [
+			restore value ].
+		isMatch ]! !
+
+!RecursiveDescentParser methodsFor: 'parsing' stamp: 'ess 6/6/2025 07:31:54'!
+matchAllIgnoringCase: aSequence
+
+	| isMatch |
+	^ self withSaveDo: [ :restore  |
+		isMatch := aSequence
+			inject: true
+			into: [ :sum :each |
+				sum and: [ self matchIgnoringCase: each ] ].
+		isMatch ifFalse: [
+			restore value ].
+		isMatch ]! !
+
+!RecursiveDescentParser methodsFor: 'parsing' stamp: 'ess 6/6/2025 07:31:58'!
+matchIgnoringCase: aCharacter
+	"Consume the next character only if it matches aCharacter.  Answer true if the match succeeded."
+
+	| isMatch |
+	isMatch := lookahead asLowercase = aCharacter asLowercase.
+	isMatch ifTrue: [
+		self consume ].
+	^ isMatch! !
+
+!RecursiveDescentParser methodsFor: 'parsing' stamp: 'ess 6/6/2025 07:32:04'!
+next
+
+	^ input next! !
+
+!RecursiveDescentParser methodsFor: 'parsing' stamp: 'ess 6/6/2025 07:32:25'!
+parse
+
+	^ self subclassResponsibility! !
+
+!RecursiveDescentParser methodsFor: 'parsing' stamp: 'ess 6/6/2025 07:32:15'!
+parse: aStringOrStream
+
+	self input: aStringOrStream.
+	^ self parse! !
+
+!RecursiveDescentParser methodsFor: 'parsing' stamp: 'ess 6/6/2025 07:34:35'!
+skipBlanks
+
+	[ self isBlank ] whileTrue: [
+		self consume ]! !
+
+!RecursiveDescentParser methodsFor: 'parsing' stamp: 'ess 6/6/2025 07:34:43'!
+skipSpaces
+
+	[ self isSpace ] whileTrue: [
+		self consume ]! !
+
+!RecursiveDescentParser methodsFor: 'parsing' stamp: 'ess 6/6/2025 07:34:55'!
+step
+	"Move to next character of input."
+
+	lookahead := input atEnd
+		ifFalse: [ self next ]
+		ifTrue: [ nil ]! !
+
+!RecursiveDescentParser methodsFor: 'parsing-characters' stamp: 'ess 6/6/2025 07:32:54'!
+readDigits
+
+	| result |
+	self isDigit ifFalse: [
+		^ self syntaxError: 'Expected decimal number' ].
+	result := 0.
+	[ self isDigit ] whileTrue: [
+		result := result * 10 + self consumeDigit ].
+	^ result! !
+
+!RecursiveDescentParser methodsFor: 'parsing-characters' stamp: 'ess 6/6/2025 07:33:05'!
+readDigits: expectedCount
+
+	^ self
+		readDigitsFrom: expectedCount
+		to: expectedCount! !
+
+!RecursiveDescentParser methodsFor: 'parsing-characters' stamp: 'ess 6/6/2025 07:33:09'!
+readDigitsFrom: minCount to: maxCount
+
+	| result count |
+	result := 0.
+	count := 0.
+	[ count < maxCount and: [ self isDigit ] ]
+		whileTrue: [
+			result := result * 10 + self consumeDigit.
+			count := count + 1 ].
+	count < minCount ifTrue: [
+		^ self syntaxError: 'Expected decimal number' ].
+	^ result! !
+
+!RecursiveDescentParser methodsFor: 'parsing-characters' stamp: 'ess 6/6/2025 07:33:49'!
+readXDigits
+
+	| result |
+	self isXDigit ifFalse: [
+		^ self syntaxError: 'Expected hexadecimal number' ].
+	result := 0.
+	[ self isXDigit ] whileTrue: [
+		result := result * 16 + self consumeXDigit ].
+	^ result! !
+
+!RecursiveDescentParser methodsFor: 'parsing-characters' stamp: 'ess 6/6/2025 07:33:55'!
+readXDigits: expectedCount
+
+	^ self
+		readXDigitsFrom: expectedCount
+		to: expectedCount! !
+
+!RecursiveDescentParser methodsFor: 'parsing-characters' stamp: 'ess 6/6/2025 07:34:12'!
+readXDigitsFrom: minCount to: maxCount
+
+	| result count |
+	result := 0.
+	count := 0.
+	[ count < maxCount and: [ self isXDigit ] ]
+		whileTrue: [
+			result := result * 16 + self consumeXDigit.
+			count := count + 1 ].
+	count < minCount ifTrue: [
+		^ self syntaxError: 'Expected hexadecimal number' ].
+	^ result! !
+
+!RecursiveDescentParser methodsFor: 'testing' stamp: 'ess 6/6/2025 07:28:42'!
+atEnd
+
+	^ lookahead isNil! !
+
+!RecursiveDescentParser methodsFor: 'testing' stamp: 'ess 6/6/2025 07:30:25'!
+isAlnum
+	"Alphanumeric in the 7-bit ASCII character set"
+
+	^ lookahead notNil
+		and: [ lookahead isPosixAlnum ]! !
+
+!RecursiveDescentParser methodsFor: 'testing' stamp: 'ess 6/6/2025 07:30:30'!
+isAlpha
+	"Alphabetic in the 7-bit ASCII character set"
+
+	^ lookahead notNil
+		and: [ lookahead isPosixAlpha ]! !
+
+!RecursiveDescentParser methodsFor: 'testing' stamp: 'ess 6/6/2025 07:30:35'!
+isBlank
+	"Horizontal whitespace in the 7-bit ASCII character set"
+
+	^ lookahead notNil
+		and: [ lookahead isPosixBlank ]! !
+
+!RecursiveDescentParser methodsFor: 'testing' stamp: 'ess 6/6/2025 07:30:40'!
+isCntrl
+	"Control in the 7-bit ASCII character set"
+
+	^ lookahead notNil
+		and: [ lookahead isPosixCntrl ]! !
+
+!RecursiveDescentParser methodsFor: 'testing' stamp: 'ess 6/6/2025 07:30:45'!
+isDigit
+	"Decimal digit in the 7-bit ASCII character set"
+
+	^ lookahead notNil
+		and: [ lookahead isPosixDigit ]! !
+
+!RecursiveDescentParser methodsFor: 'testing' stamp: 'ess 6/6/2025 07:30:49'!
+isGraph
+	"Graphic--has a printed representation--in the 7-bit ASCII character set"
+
+	^ lookahead notNil
+		and: [ lookahead isPosixGraph ]! !
+
+!RecursiveDescentParser methodsFor: 'testing' stamp: 'ess 6/6/2025 07:30:55'!
+isLower
+	"Lowercase letter in the 7-bit ASCII character set."
+
+	^ lookahead notNil
+		and: [ lookahead isPosixLower ]! !
+
+!RecursiveDescentParser methodsFor: 'testing' stamp: 'ess 6/6/2025 07:31:01'!
+isPrint
+	"Printable--takes up space when displayed--in the 7-bit ASCII character set"
+
+	^ lookahead notNil
+		and: [ lookahead isPosixPrint ]! !
+
+!RecursiveDescentParser methodsFor: 'testing' stamp: 'ess 6/6/2025 07:31:04'!
+isPunct
+	"Punctuation in the 7-bit ASCII character set"
+
+	^ lookahead notNil
+		and: [ lookahead isPosixPunct ]! !
+
+!RecursiveDescentParser methodsFor: 'testing' stamp: 'ess 6/6/2025 07:31:11'!
+isSpace
+	"Horizontal or vertical whitespace in the 7-bit ASCII character set"
+
+	^ lookahead notNil
+		and: [ lookahead isPosixSpace ]! !
+
+!RecursiveDescentParser methodsFor: 'testing' stamp: 'ess 6/6/2025 07:31:16'!
+isUpper
+	"Uppercase letter in the 7-bit ASCII character set"
+
+	^ lookahead notNil
+		and: [ lookahead isPosixUpper ]! !
+
+!RecursiveDescentParser methodsFor: 'testing' stamp: 'ess 6/6/2025 07:31:20'!
+isWord
+
+	^ lookahead notNil
+		and: [ lookahead isPosixWord ]! !
+
+!RecursiveDescentParser methodsFor: 'testing' stamp: 'ess 6/6/2025 07:31:26'!
+isXDigit
+	"Hexadecimal digit in the 7-bit ASCII character set"
+
+	^ lookahead notNil
+		and: [ lookahead isPosixXDigit ]! !
+
+!RecursiveDescentParser class methodsFor: 'as yet unclassified' stamp: 'ess 6/6/2025 16:04:29'!
+parse: aStringOrStream
+
+	^ self new
+		parse: aStringOrStream! !
+
 !Unicode methodsFor: 'accessing' stamp: 'ess 11/21/2024 04:48:37'!
 at: aCodepoint hasProperty: propertyName
 
@@ -2241,16 +2596,150 @@ caseFold
 
 	^ self simpleCaseFold! !
 
-!Character methodsFor: '*Unicode-converting' stamp: 'ess 6/2/2025 08:59:02'!
+!Character methodsFor: '*Unicode-converting' stamp: 'ess 6/9/2025 11:21:22'!
 fullCaseFold
-	"Answer a string that is the full case-folded version of myself."
+	"Answer the string that is the full case-folded version of myself."
 
 	^ Unicode fullFold: { self codePoint }! !
 
-!Character methodsFor: '*Unicode-converting' stamp: 'ess 6/2/2025 08:58:50'!
+!Character methodsFor: '*Unicode-testing' stamp: 'ess 11/18/2024 03:30:03'!
+isPosixAlnum
+	"Alphanumeric in the 7-bit ASCII character set"
+
+	| cp |
+	cp := self codePoint.
+	cp < `$0 codePoint` ifTrue: [ ^ false ].
+	cp <= `$9 codePoint` ifTrue: [ ^ true ].
+	cp < `$A codePoint` ifTrue: [ ^ false ].
+	cp <= `$Z codePoint` ifTrue: [ ^ true ].
+	^ `$a codePoint` <= cp
+		and: [ cp <= `$z codePoint` ]! !
+
+!Character methodsFor: '*Unicode-testing' stamp: 'ess 11/18/2024 03:30:13'!
+isPosixAlpha
+	"Alphabetic in the 7-bit ASCII character set"
+
+	| cp |
+	cp := self codePoint.
+	cp < `$A codePoint` ifTrue: [ ^ false ].
+	cp <= `$Z codePoint` ifTrue: [ ^ true ].
+	^ `$a codePoint` <= cp
+		and: [ cp <= `$z codePoint` ]! !
+
+!Character methodsFor: '*Unicode-testing' stamp: 'ess 5/30/2025 15:30:18'!
+isPosixBlank
+	"Horizontal whitespace in the 7-bit ASCII character set"
+	
+	^ self = `Character tab`
+		or: [ self = `Character space` ]! !
+
+!Character methodsFor: '*Unicode-testing' stamp: 'ess 11/18/2024 03:20:02'!
+isPosixCntrl
+	"Control in the 7-bit ASCII character set"
+
+	| cp |
+	cp := self codePoint.
+	^ cp <= 31
+		or: [ cp = 127 ]! !
+
+!Character methodsFor: '*Unicode-testing' stamp: 'ess 11/18/2024 03:29:28'!
+isPosixDigit
+	"Decimal digit in the 7-bit ASCII character set"
+
+	| cp |
+	cp := self codePoint.
+ 	^ `$0 codePoint` <= cp
+		and: [ cp <= `$9 codePoint` ]! !
+
+!Character methodsFor: '*Unicode-testing' stamp: 'ess 11/18/2024 03:31:18'!
+isPosixGraph
+	"Graphic--has a printed representation--in the 7-bit ASCII character set"
+
+	| cp |
+	cp := self codePoint.
+	^ 33 <= cp  "Excludes space, see #isPosixPrint"
+		and: [ cp <= 126 ]! !
+
+!Character methodsFor: '*Unicode-testing' stamp: 'ess 11/18/2024 03:30:55'!
+isPosixLower
+	"Lowercase letter in the 7-bit ASCII character set."
+
+	| cp |
+	cp := self codePoint.
+	^ `$a codePoint` <= cp
+		and: [ cp <= `$z codePoint` ]! !
+
+!Character methodsFor: '*Unicode-testing' stamp: 'ess 11/18/2024 03:31:28'!
+isPosixPrint
+	"Printable--takes up space when displayed--in the 7-bit ASCII character set"
+
+	| cp |
+	cp := self codePoint.
+	^ 32 <= cp  "Includes space, see #isPosixGraph"
+		and: [ cp <= 126 ]! !
+
+!Character methodsFor: '*Unicode-testing' stamp: 'ess 11/17/2024 18:39:08'!
+isPosixPunct
+	"Punctuation in the 7-bit ASCII character set"
+	
+	^ self isPosixGraph
+		and: [ self isPosixAlnum not ]! !
+
+!Character methodsFor: '*Unicode-testing' stamp: 'ess 11/17/2024 17:57:58'!
+isPosixSpace
+	"Horizontal or vertical whitespace in the 7-bit ASCII character set"
+	
+	"TAB, LF, VT, FF, CR, or Space"
+	^ #(9 10 11 12 13 32) statePointsTo: self codePoint! !
+
+!Character methodsFor: '*Unicode-testing' stamp: 'ess 11/18/2024 03:32:04'!
+isPosixUpper
+	"Uppercase letter in the 7-bit ASCII character set"
+
+	| cp |
+	cp := self codePoint.
+	^ `$A codePoint` <= cp
+		and: [ cp <= `$Z codePoint` ]! !
+
+!Character methodsFor: '*Unicode-testing' stamp: 'ess 5/30/2025 15:31:20'!
+isPosixWord
+
+	^ self = $_
+		or: [ self isPosixAlnum ]! !
+
+!Character methodsFor: '*Unicode-testing' stamp: 'ess 5/30/2025 15:31:43'!
+isPosixXDigit
+	"Hexadecimal digit in the 7-bit ASCII character set"
+	"N.B., The awkward name is not just for compatibily with the old POSIX [:xdigit:], but also to leave #isHexDigit free to support Unicode hex digits."
+
+	| cp |
+	cp := self codePoint.
+	cp < `$0 codePoint` ifTrue: [ ^ false ].
+	cp <= `$9 codePoint` ifTrue: [ ^ true ].
+	cp < `$A codePoint` ifTrue: [ ^ false ].
+	cp <= `$F codePoint` ifTrue: [ ^ true ].
+	^ `$a codePoint` <= cp
+		and: [ cp <= `$f codePoint` ]! !
+
+!Character methodsFor: '*Unicode-converting' stamp: 'ess 6/9/2025 11:21:43'!
 simpleCaseFold
 	"Answer the character that is the simple case-folded version of myself."
 
-	| result |
-	result := Unicode simpleFold: { self codePoint }.
-	^ result first! !
+	| resultString |
+	resultString := Unicode simpleFold: { self codePoint }.
+	^ resultString first! !
+
+!Character methodsFor: '*Unicode-accessing' stamp: 'ess 5/30/2025 15:29:20'!
+xDigitValue
+	"Posix(-ish) digitValue"
+	"digittoint(3): Always returns an integer from the range of 0 to 15.  If the given character was not a digit as defined by isxdigit(3), the function will return 0."
+
+	| cp |
+	cp := self codePoint.
+	cp < `$0 codePoint` ifTrue: [ ^ 0 ].
+	cp <= `$9 codePoint` ifTrue: [ ^ cp - `$0 codePoint` ].
+	cp < `$A codePoint` ifTrue: [ ^ 0 ].
+	cp <= `$F codePoint` ifTrue: [ ^ cp - `$A codePoint - 10` ].
+	cp < `$a codePoint` ifTrue: [ ^ 0 ].
+	cp <= `$f codePoint` ifTrue: [ ^ cp - `$a codePoint - 10` ].
+	^ 0! !
