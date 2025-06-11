@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7263] on 9 June 2025 at 11:26:45 am'!
+'From Cuis7.5 [latest update: #7263] on 10 June 2025 at 2:08:19 pm'!
 'Description '!
-!provides: 'Unicode' 1 2!
+!provides: 'Unicode' 1 3!
 !requires: 'Cuis-Base' 75 7259 nil!
 SystemOrganization addCategory: #Unicode!
 SystemOrganization addCategory: #'Unicode-Public'!
@@ -2596,11 +2596,13 @@ caseFold
 
 	^ self simpleCaseFold! !
 
-!Character methodsFor: '*Unicode-converting' stamp: 'ess 6/9/2025 11:21:22'!
+!Character methodsFor: '*Unicode-converting' stamp: 'ess 6/10/2025 14:00:39'!
 fullCaseFold
 	"Answer the string that is the full case-folded version of myself."
 
-	^ Unicode fullFold: { self codePoint }! !
+	| resultArray |
+	resultArray := Unicode fullFold: { self codePoint }.
+	^ resultArray asString! !
 
 !Character methodsFor: '*Unicode-testing' stamp: 'ess 11/18/2024 03:30:03'!
 isPosixAlnum
@@ -2721,13 +2723,13 @@ isPosixXDigit
 	^ `$a codePoint` <= cp
 		and: [ cp <= `$f codePoint` ]! !
 
-!Character methodsFor: '*Unicode-converting' stamp: 'ess 6/9/2025 11:21:43'!
+!Character methodsFor: '*Unicode-converting' stamp: 'ess 6/10/2025 14:00:01'!
 simpleCaseFold
 	"Answer the character that is the simple case-folded version of myself."
 
-	| resultString |
-	resultString := Unicode simpleFold: { self codePoint }.
-	^ resultString first! !
+	| resultArray |
+	resultArray := Unicode simpleFold: { self codePoint }.
+	^ self species codePoint: resultArray first! !
 
 !Character methodsFor: '*Unicode-accessing' stamp: 'ess 5/30/2025 15:29:20'!
 xDigitValue
