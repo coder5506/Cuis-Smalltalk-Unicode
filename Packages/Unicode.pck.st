@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7265] on 14 June 2025 at 11:59:54 am'!
+'From Cuis7.5 [latest update: #7279] on 25 June 2025 at 7:14:14 am'!
 'Description '!
-!provides: 'Unicode' 1 4!
+!provides: 'Unicode' 1 5!
 !requires: 'Cuis-Base' 75 7259 nil!
 SystemOrganization addCategory: #Unicode!
 SystemOrganization addCategory: #'Unicode-Public'!
@@ -1617,16 +1617,29 @@ input: aStringOrStream
 	input := aStringOrStream readStream.
 	self step! !
 
-!RecursiveDescentParser methodsFor: 'as yet unclassified' stamp: 'ess 6/6/2025 07:36:22'!
+!RecursiveDescentParser methodsFor: 'as yet unclassified' stamp: 'ess 6/25/2025 06:59:43'!
+parseError: aMessageString
+
+	^ self parseErrorClass
+		signal: aMessageString! !
+
+!RecursiveDescentParser methodsFor: 'as yet unclassified' stamp: 'ess 6/25/2025 06:59:13'!
+parseErrorClass
+
+	^ Error! !
+
+!RecursiveDescentParser methodsFor: 'as yet unclassified' stamp: 'ess 6/25/2025 07:00:33'!
 syntaxError: aMessageString
+	"Deprecated.  See #parseError:."
 
 	^ self syntaxErrorClass
 		signal: aMessageString! !
 
-!RecursiveDescentParser methodsFor: 'as yet unclassified' stamp: 'ess 6/6/2025 07:35:59'!
+!RecursiveDescentParser methodsFor: 'as yet unclassified' stamp: 'ess 6/25/2025 07:00:53'!
 syntaxErrorClass
+	"Deprecated.  See #parseErrorClass."
 
-	^ Error! !
+	^ self parseErrorClass! !
 
 !RecursiveDescentParser methodsFor: 'backtracking' stamp: 'ess 6/6/2025 07:34:17'!
 restore
@@ -1668,41 +1681,41 @@ initialize
 	super initialize.
 	shift := OrderedCollection new! !
 
-!RecursiveDescentParser methodsFor: 'parsing' stamp: 'ess 6/6/2025 07:29:17'!
+!RecursiveDescentParser methodsFor: 'parsing' stamp: 'ess 6/25/2025 07:02:15'!
 consume
 	"Update lookahead to the next character of the input, or nil.  Answer the old value of the lookahead."
 
 	| la |
 	la := lookahead ifNil: [
-		^ self syntaxError: 'Unexpected end of input' ].
+		^ self parseError: 'Unexpected end of input' ].
 	self step.
 	^ la! !
 
-!RecursiveDescentParser methodsFor: 'parsing' stamp: 'ess 6/6/2025 07:29:25'!
+!RecursiveDescentParser methodsFor: 'parsing' stamp: 'ess 6/25/2025 07:02:24'!
 consumeDigit
 
 	self isDigit ifFalse: [
-		^ self syntaxError: 'Expected decimal digit' ].
+		^ self parseError: 'Expected decimal digit' ].
 	^ self consume xDigitValue! !
 
-!RecursiveDescentParser methodsFor: 'parsing' stamp: 'ess 6/6/2025 07:29:30'!
+!RecursiveDescentParser methodsFor: 'parsing' stamp: 'ess 6/25/2025 07:02:28'!
 consumeXDigit
 
 	self isXDigit ifFalse: [
-		^ self syntaxError: 'Expected hexadecimal digit' ].
+		^ self parseError: 'Expected hexadecimal digit' ].
 	^ self consume xDigitValue! !
 
-!RecursiveDescentParser methodsFor: 'parsing' stamp: 'ess 6/6/2025 07:29:36'!
+!RecursiveDescentParser methodsFor: 'parsing' stamp: 'ess 6/25/2025 07:02:31'!
 expect: aCharacter
 
 	(self match: aCharacter) ifFalse: [
-		^ self syntaxError: 'Expected ', aCharacter asString ]! !
+		^ self parseError: 'Expected ', aCharacter asString ]! !
 
-!RecursiveDescentParser methodsFor: 'parsing' stamp: 'ess 6/6/2025 07:29:42'!
+!RecursiveDescentParser methodsFor: 'parsing' stamp: 'ess 6/25/2025 07:02:36'!
 expectAll: aSequence
 
 	(self matchAll: aSequence) ifFalse: [
-		^ self syntaxError: 'Expected ', aSequence asString ]! !
+		^ self parseError: 'Expected ', aSequence asString ]! !
 
 !RecursiveDescentParser methodsFor: 'parsing' stamp: 'ess 6/6/2025 07:31:31'!
 lookahead
@@ -1791,12 +1804,12 @@ step
 		ifFalse: [ self next ]
 		ifTrue: [ nil ]! !
 
-!RecursiveDescentParser methodsFor: 'parsing-characters' stamp: 'ess 6/6/2025 07:32:54'!
+!RecursiveDescentParser methodsFor: 'parsing-characters' stamp: 'ess 6/25/2025 07:02:39'!
 readDigits
 
 	| result |
 	self isDigit ifFalse: [
-		^ self syntaxError: 'Expected decimal number' ].
+		^ self parseError: 'Expected decimal number' ].
 	result := 0.
 	[ self isDigit ] whileTrue: [
 		result := result * 10 + self consumeDigit ].
@@ -1809,7 +1822,7 @@ readDigits: expectedCount
 		readDigitsFrom: expectedCount
 		to: expectedCount! !
 
-!RecursiveDescentParser methodsFor: 'parsing-characters' stamp: 'ess 6/6/2025 07:33:09'!
+!RecursiveDescentParser methodsFor: 'parsing-characters' stamp: 'ess 6/25/2025 07:02:45'!
 readDigitsFrom: minCount to: maxCount
 
 	| result count |
@@ -1820,15 +1833,15 @@ readDigitsFrom: minCount to: maxCount
 			result := result * 10 + self consumeDigit.
 			count := count + 1 ].
 	count < minCount ifTrue: [
-		^ self syntaxError: 'Expected decimal number' ].
+		^ self parseError: 'Expected decimal number' ].
 	^ result! !
 
-!RecursiveDescentParser methodsFor: 'parsing-characters' stamp: 'ess 6/6/2025 07:33:49'!
+!RecursiveDescentParser methodsFor: 'parsing-characters' stamp: 'ess 6/25/2025 07:02:50'!
 readXDigits
 
 	| result |
 	self isXDigit ifFalse: [
-		^ self syntaxError: 'Expected hexadecimal number' ].
+		^ self parseError: 'Expected hexadecimal number' ].
 	result := 0.
 	[ self isXDigit ] whileTrue: [
 		result := result * 16 + self consumeXDigit ].
@@ -1841,7 +1854,7 @@ readXDigits: expectedCount
 		readXDigitsFrom: expectedCount
 		to: expectedCount! !
 
-!RecursiveDescentParser methodsFor: 'parsing-characters' stamp: 'ess 6/6/2025 07:34:12'!
+!RecursiveDescentParser methodsFor: 'parsing-characters' stamp: 'ess 6/25/2025 07:02:53'!
 readXDigitsFrom: minCount to: maxCount
 
 	| result count |
@@ -1852,7 +1865,7 @@ readXDigitsFrom: minCount to: maxCount
 			result := result * 16 + self consumeXDigit.
 			count := count + 1 ].
 	count < minCount ifTrue: [
-		^ self syntaxError: 'Expected hexadecimal number' ].
+		^ self parseError: 'Expected hexadecimal number' ].
 	^ result! !
 
 !RecursiveDescentParser methodsFor: 'testing' stamp: 'ess 6/6/2025 07:28:42'!
@@ -1873,6 +1886,12 @@ isAlpha
 
 	^ lookahead notNil
 		and: [ lookahead isPosixAlpha ]! !
+
+!RecursiveDescentParser methodsFor: 'testing' stamp: 'ess 6/25/2025 06:50:51'!
+isAscii
+
+	^ lookahead notNil
+		and: [ lookahead codePoint <= 127 ]! !
 
 !RecursiveDescentParser methodsFor: 'testing' stamp: 'ess 6/6/2025 07:30:35'!
 isBlank
