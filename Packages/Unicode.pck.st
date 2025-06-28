@@ -1,7 +1,7 @@
-'From Cuis7.5 [latest update: #7279] on 25 June 2025 at 7:14:14 am'!
+'From Cuis7.5 [latest update: #7279] on 28 June 2025 at 11:09:21 am'!
 'Description '!
-!provides: 'Unicode' 1 5!
-!requires: 'Cuis-Base' 75 7259 nil!
+!provides: 'Unicode' 1 6!
+!requires: 'Cuis-Base' 75 7279 nil!
 SystemOrganization addCategory: #Unicode!
 SystemOrganization addCategory: #'Unicode-Public'!
 SystemOrganization addCategory: #'Unicode-Tests'!
@@ -1401,8 +1401,9 @@ canonicallyCompose: aSequenceOfCodepoints
 								next ] ] ].
 		stream nextPut: lastCodepoint ]! !
 
-!DecompositionMappings methodsFor: 'accessing' stamp: 'ess 6/14/2025 10:05:26'!
+!DecompositionMappings methodsFor: 'accessing' stamp: 'ess 6/28/2025 10:49:19'!
 canonicallyDecompose: aSequenceOfCodepoints
+	"The canonical decomposition is formed by recursively applying the canonical mappings, then applying the Canonical Ordering Algorithm."
 
 	| codepoints |
 
@@ -1415,6 +1416,25 @@ canonicallyDecompose: aSequenceOfCodepoints
 	codepoints := CodepointArray streamContents: [ :stream |
 		self
 			canonicallyDecompose: aSequenceOfCodepoints
+			on: stream ].
+	codepoints beCanonicallyOrdered.
+	^ codepoints! !
+
+!DecompositionMappings methodsFor: 'accessing' stamp: 'ess 6/28/2025 10:49:35'!
+compatiblyDecompose: aSequenceOfCodepoints
+	"The compatibility decomposition is formed by recursively applying the canonical and compatibility mappings, then applying the Canonical Ordering Algorithm."
+
+	| codepoints |
+
+	"ASCII is unaffected by any decomposition."
+	(aSequenceOfCodepoints
+		allSatisfy: [ :each | Codepoint isAscii: each ])
+			ifTrue: [
+				^ CodepointArray newFrom: aSequenceOfCodepoints ].
+
+	codepoints := CodepointArray streamContents: [ :stream |
+		self
+			compatiblyDecompose: aSequenceOfCodepoints
 			on: stream ].
 	codepoints beCanonicallyOrdered.
 	^ codepoints! !
@@ -1487,13 +1507,12 @@ canonicallyDecompose: aSequenceOfCodepoints on: aStream
 			canonicallyDecomposeCodepoint: each
 			on: aStream ]! !
 
-!DecompositionMappings methodsFor: 'private-accessing' stamp: 'ess 4/3/2025 06:48:32'!
+!DecompositionMappings methodsFor: 'private-accessing' stamp: 'ess 6/28/2025 10:48:13'!
 canonicallyDecomposeCodepoint: aCodepoint on: aStream
+	"The canonical decomposition is formed by recursively applying the canonical mappings, then applying the Canonical Ordering Algorithm."
 
 	| mapping |
-	(types at: aCodepoint) ifNotNil: [
-		^ self ].
-	mapping := decompositions at: aCodepoint.
+	mapping := (types at: aCodepoint) ifNil: [ decompositions at: aCodepoint ].
 	mapping ifNil: [
 		^ aStream nextPut: aCodepoint ].
 	mappings
@@ -1501,6 +1520,29 @@ canonicallyDecomposeCodepoint: aCodepoint on: aStream
 		do: [ :each |
 			self
 				canonicallyDecomposeCodepoint: each
+				on: aStream ]! !
+
+!DecompositionMappings methodsFor: 'private-accessing' stamp: 'ess 6/28/2025 10:43:11'!
+compatiblyDecompose: aSequenceOfCodepoints on: aStream
+
+	aSequenceOfCodepoints do: [ :each |
+		self
+			compatiblyDecomposeCodepoint: each
+			on: aStream ]! !
+
+!DecompositionMappings methodsFor: 'private-accessing' stamp: 'ess 6/28/2025 10:48:35'!
+compatiblyDecomposeCodepoint: aCodepoint on: aStream
+	"The compatibility decomposition is formed by recursively applying the canonical and compatibility mappings, then applying the Canonical Ordering Algorithm."
+
+	| mapping |
+	mapping := decompositions at: aCodepoint.
+	mapping ifNil: [
+		^ aStream nextPut: aCodepoint ].
+	mappings
+		mappingAt: mapping
+		do: [ :each |
+			self
+				compatiblyDecomposeCodepoint: each
 				on: aStream ]! !
 
 !DecompositionMappings methodsFor: 'private-accessing' stamp: 'ess 11/20/2024 21:14:20'!
@@ -2001,6 +2043,12 @@ canonicallyDecompose: codepoints
 	^ unicodeData
 		canonicallyDecompose: codepoints! !
 
+!Unicode methodsFor: 'accessing' stamp: 'ess 6/28/2025 10:50:02'!
+compatiblyDecompose: codepoints
+
+	^ unicodeData
+		compatiblyDecompose: codepoints! !
+
 !Unicode methodsFor: 'accessing' stamp: 'ess 6/14/2025 10:38:38'!
 fullFold: codepoints
 
@@ -2012,6 +2060,30 @@ generalCategory: categoryNameOrAlias
 
 	^ unicodeData
 		generalCategory: categoryNameOrAlias! !
+
+!Unicode methodsFor: 'accessing' stamp: 'ess 6/28/2025 10:51:05'!
+nfc: codepoints
+	"Normalization Form C (NFC): Canonical Decomposition, followed by Canonical Composition"
+
+	^ self canonicallyCompose: (self nfd: codepoints)! !
+
+!Unicode methodsFor: 'accessing' stamp: 'ess 6/28/2025 10:51:29'!
+nfd: codepoints
+	"Normalization Form D (NFD): Canonical Decomposition"
+
+	^ self canonicallyDecompose: codepoints! !
+
+!Unicode methodsFor: 'accessing' stamp: 'ess 6/28/2025 10:51:49'!
+nfkc: codepoints
+	"Normalization Form KC (NFKC): Compatability Decomposition, followed by Canonical Composition"
+
+	^ self canonicallyCompose: (self nfkd: codepoints)! !
+
+!Unicode methodsFor: 'accessing' stamp: 'ess 6/28/2025 10:51:39'!
+nfkd: codepoints
+	"Normalization Form KD (NFKD): Compatability Decomposition"
+
+	^ self compatiblyDecompose: codepoints! !
 
 !Unicode methodsFor: 'accessing' stamp: 'ess 6/14/2025 10:38:48'!
 property: propertyName
@@ -2326,6 +2398,12 @@ canonicallyDecompose: aSequenceOfCodepoints
 
 	^ decomposition
 		canonicallyDecompose: aSequenceOfCodepoints! !
+
+!UnicodeData methodsFor: 'accessing' stamp: 'ess 6/28/2025 10:50:25'!
+compatiblyDecompose: aSequenceOfCodepoints
+
+	^ decomposition
+		compatiblyDecompose: aSequenceOfCodepoints! !
 
 !UnicodeData methodsFor: 'accessing' stamp: 'ess 5/31/2025 06:58:45'!
 generalCategory: categoryNameOrAlias
@@ -2666,6 +2744,34 @@ caseFold
 fullCaseFold
 
 	^ (Unicode fullFold: self asCodePoints)
+		asString! !
+
+!CharacterSequence methodsFor: '*Unicode-converting' stamp: 'ess 6/28/2025 11:01:49'!
+nfc
+	"Normalization Form C (NFC): Canonical Decomposition, followed by Canonical Composition"
+
+	^ (Unicode nfc: self asCodePoints)
+		asString! !
+
+!CharacterSequence methodsFor: '*Unicode-converting' stamp: 'ess 6/28/2025 11:02:04'!
+nfd
+	"Normalization Form D (NFD): Canonical Decomposition"
+
+	^ (Unicode nfd: self asCodePoints)
+		asString! !
+
+!CharacterSequence methodsFor: '*Unicode-converting' stamp: 'ess 6/28/2025 11:02:20'!
+nfkc
+	"Normalization Form KC (NFKC): Compatability Decomposition, followed by Canonical Composition"
+
+	^ (Unicode nfkc: self asCodePoints)
+		asString! !
+
+!CharacterSequence methodsFor: '*Unicode-converting' stamp: 'ess 6/28/2025 11:02:31'!
+nfkd
+	"Normalization Form KD (NFKD): Compatability Decomposition"
+
+	^ (Unicode nfkd: self asCodePoints)
 		asString! !
 
 !CharacterSequence methodsFor: '*Unicode-converting' stamp: 'ess 5/31/2025 07:17:23'!
