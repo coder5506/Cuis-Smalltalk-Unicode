@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7279] on 28 June 2025 at 11:09:21 am'!
+'From Cuis7.5 [latest update: #7294] on 2 July 2025 at 8:32:39 am'!
 'Description '!
-!provides: 'Unicode' 1 6!
+!provides: 'Unicode' 1 7!
 !requires: 'Cuis-Base' 75 7279 nil!
 SystemOrganization addCategory: #Unicode!
 SystemOrganization addCategory: #'Unicode-Public'!
@@ -706,12 +706,10 @@ shrinkPlane: planeArray
 
 	^ self shrinkArray: planeArray! !
 
-!UnicodeBitmap methodsFor: 'private-accessing' stamp: 'ess 4/3/2025 07:59:03'!
+!UnicodeBitmap methodsFor: 'private-accessing' stamp: 'ess 7/2/2025 08:32:31'!
 blockSize: aBlock
 
-	^ aBlock
-		inject: 0
-		into: [ :sum :each | sum + (self countBitsInByteArray: each) ]! !
+	^ self countBitsInByteArray: aBlock! !
 
 !CaseFoldingTests methodsFor: 'tests' stamp: 'ess 11/20/2024 23:14:00'!
 testFull
