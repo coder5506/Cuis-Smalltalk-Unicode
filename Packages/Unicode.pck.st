@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7294] on 2 July 2025 at 8:32:39 am'!
+'From Cuis7.5 [latest update: #7363] on 22 July 2025 at 2:00:51 pm'!
 'Description '!
-!provides: 'Unicode' 1 7!
+!provides: 'Unicode' 1 8!
 !requires: 'Cuis-Base' 75 7279 nil!
 SystemOrganization addCategory: #Unicode!
 SystemOrganization addCategory: #'Unicode-Public'!
@@ -1651,10 +1651,11 @@ forClass: aClass
 	^ self new
 		setClass: aClass! !
 
-!RecursiveDescentParser methodsFor: 'accessing' stamp: 'ess 6/6/2025 07:30:20'!
+!RecursiveDescentParser methodsFor: 'accessing' stamp: 'ess 7/22/2025 13:53:46'!
 input: aStringOrStream
 
 	input := aStringOrStream readStream.
+	lookahead := nil.
 	self step! !
 
 !RecursiveDescentParser methodsFor: 'as yet unclassified' stamp: 'ess 6/25/2025 06:59:43'!
@@ -2744,6 +2745,20 @@ fullCaseFold
 	^ (Unicode fullFold: self asCodePoints)
 		asString! !
 
+!CharacterSequence methodsFor: '*Unicode-testing' stamp: 'ess 7/14/2025 11:53:41'!
+isPosixBlank
+	"Contains only horizontal whitespace in the 7-bit ASCII character set."
+
+	^ self
+		allSatisfy: [ :each | each isPosixBlank ]! !
+
+!CharacterSequence methodsFor: '*Unicode-testing' stamp: 'ess 7/17/2025 14:04:06'!
+isPosixSpace
+	"Contains only horizontal or vertical whitespace in the 7-bit ASCII character set."
+
+	^ self
+		allSatisfy: [ :each | each isPosixSpace ]! !
+
 !CharacterSequence methodsFor: '*Unicode-converting' stamp: 'ess 6/28/2025 11:01:49'!
 nfc
 	"Normalization Form C (NFC): Canonical Decomposition, followed by Canonical Composition"
@@ -2792,9 +2807,9 @@ fullCaseFold
 	resultArray := Unicode fullFold: { self codePoint }.
 	^ resultArray asString! !
 
-!Character methodsFor: '*Unicode-testing' stamp: 'ess 11/18/2024 03:30:03'!
+!Character methodsFor: '*Unicode-testing' stamp: 'ess 7/14/2025 08:53:07'!
 isPosixAlnum
-	"Alphanumeric in the 7-bit ASCII character set"
+	"Alphanumeric in the 7-bit ASCII character set."
 
 	| cp |
 	cp := self codePoint.
@@ -2805,9 +2820,9 @@ isPosixAlnum
 	^ `$a codePoint` <= cp
 		and: [ cp <= `$z codePoint` ]! !
 
-!Character methodsFor: '*Unicode-testing' stamp: 'ess 11/18/2024 03:30:13'!
+!Character methodsFor: '*Unicode-testing' stamp: 'ess 7/14/2025 08:53:15'!
 isPosixAlpha
-	"Alphabetic in the 7-bit ASCII character set"
+	"Alphabetic in the 7-bit ASCII character set."
 
 	| cp |
 	cp := self codePoint.
@@ -2816,38 +2831,38 @@ isPosixAlpha
 	^ `$a codePoint` <= cp
 		and: [ cp <= `$z codePoint` ]! !
 
-!Character methodsFor: '*Unicode-testing' stamp: 'ess 5/30/2025 15:30:18'!
+!Character methodsFor: '*Unicode-testing' stamp: 'ess 7/14/2025 08:53:30'!
 isPosixBlank
-	"Horizontal whitespace in the 7-bit ASCII character set"
+	"Horizontal whitespace in the 7-bit ASCII character set."
 	
 	^ self = `Character tab`
 		or: [ self = `Character space` ]! !
 
-!Character methodsFor: '*Unicode-testing' stamp: 'ess 11/18/2024 03:20:02'!
+!Character methodsFor: '*Unicode-testing' stamp: 'ess 7/14/2025 08:53:38'!
 isPosixCntrl
-	"Control in the 7-bit ASCII character set"
+	"Control in the 7-bit ASCII character set."
 
 	| cp |
 	cp := self codePoint.
 	^ cp <= 31
 		or: [ cp = 127 ]! !
 
-!Character methodsFor: '*Unicode-testing' stamp: 'ess 11/18/2024 03:29:28'!
+!Character methodsFor: '*Unicode-testing' stamp: 'ess 7/14/2025 08:53:44'!
 isPosixDigit
-	"Decimal digit in the 7-bit ASCII character set"
+	"Decimal digit in the 7-bit ASCII character set."
 
 	| cp |
 	cp := self codePoint.
  	^ `$0 codePoint` <= cp
 		and: [ cp <= `$9 codePoint` ]! !
 
-!Character methodsFor: '*Unicode-testing' stamp: 'ess 11/18/2024 03:31:18'!
+!Character methodsFor: '*Unicode-testing' stamp: 'ess 7/14/2025 08:54:05'!
 isPosixGraph
-	"Graphic--has a printed representation--in the 7-bit ASCII character set"
+	"Graphic--has a printed representation--in the 7-bit ASCII character set."
 
 	| cp |
 	cp := self codePoint.
-	^ 33 <= cp  "Excludes space, see #isPosixPrint"
+	^ 33 <= cp  "Excludes space, see #isPosixPrint."
 		and: [ cp <= 126 ]! !
 
 !Character methodsFor: '*Unicode-testing' stamp: 'ess 11/18/2024 03:30:55'!
@@ -2859,32 +2874,32 @@ isPosixLower
 	^ `$a codePoint` <= cp
 		and: [ cp <= `$z codePoint` ]! !
 
-!Character methodsFor: '*Unicode-testing' stamp: 'ess 11/18/2024 03:31:28'!
+!Character methodsFor: '*Unicode-testing' stamp: 'ess 7/14/2025 08:54:22'!
 isPosixPrint
-	"Printable--takes up space when displayed--in the 7-bit ASCII character set"
+	"Printable--takes up space when displayed--in the 7-bit ASCII character set."
 
 	| cp |
 	cp := self codePoint.
-	^ 32 <= cp  "Includes space, see #isPosixGraph"
+	^ 32 <= cp  "Includes space, see #isPosixGraph."
 		and: [ cp <= 126 ]! !
 
-!Character methodsFor: '*Unicode-testing' stamp: 'ess 11/17/2024 18:39:08'!
+!Character methodsFor: '*Unicode-testing' stamp: 'ess 7/14/2025 08:54:31'!
 isPosixPunct
-	"Punctuation in the 7-bit ASCII character set"
+	"Punctuation in the 7-bit ASCII character set."
 	
 	^ self isPosixGraph
 		and: [ self isPosixAlnum not ]! !
 
-!Character methodsFor: '*Unicode-testing' stamp: 'ess 11/17/2024 17:57:58'!
+!Character methodsFor: '*Unicode-testing' stamp: 'ess 7/14/2025 08:55:38'!
 isPosixSpace
-	"Horizontal or vertical whitespace in the 7-bit ASCII character set"
+	"Horizontal or vertical whitespace in the 7-bit ASCII character set."
 	
-	"TAB, LF, VT, FF, CR, or Space"
-	^ #(9 10 11 12 13 32) statePointsTo: self codePoint! !
+	^ #(9 "TAB"  10 "LF"  11 "VT"  12 "FF"  13 "CR"  32 "Space")
+		statePointsTo: self codePoint! !
 
-!Character methodsFor: '*Unicode-testing' stamp: 'ess 11/18/2024 03:32:04'!
+!Character methodsFor: '*Unicode-testing' stamp: 'ess 7/14/2025 08:55:44'!
 isPosixUpper
-	"Uppercase letter in the 7-bit ASCII character set"
+	"Uppercase letter in the 7-bit ASCII character set."
 
 	| cp |
 	cp := self codePoint.
@@ -2897,9 +2912,9 @@ isPosixWord
 	^ self = $_
 		or: [ self isPosixAlnum ]! !
 
-!Character methodsFor: '*Unicode-testing' stamp: 'ess 5/30/2025 15:31:43'!
+!Character methodsFor: '*Unicode-testing' stamp: 'ess 7/14/2025 08:55:56'!
 isPosixXDigit
-	"Hexadecimal digit in the 7-bit ASCII character set"
+	"Hexadecimal digit in the 7-bit ASCII character set."
 	"N.B., The awkward name is not just for compatibily with the old POSIX [:xdigit:], but also to leave #isHexDigit free to support Unicode hex digits."
 
 	| cp |
