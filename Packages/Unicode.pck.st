@@ -1,7 +1,6 @@
-'From Cuis7.5 [latest update: #7363] on 22 July 2025 at 2:00:51 pm'!
+'From Cuis7.5 [latest update: #7370] on 25 July 2025 at 8:25:29 am'!
 'Description '!
-!provides: 'Unicode' 1 8!
-!requires: 'Cuis-Base' 75 7279 nil!
+!provides: 'Unicode' 1 9!
 SystemOrganization addCategory: #Unicode!
 SystemOrganization addCategory: #'Unicode-Public'!
 SystemOrganization addCategory: #'Unicode-Tests'!
@@ -2160,6 +2159,20 @@ unload
 
 	current := nil! !
 
+!Unicode class methodsFor: 'as yet unclassified' stamp: 'ess 7/25/2025 07:44:13'!
+replacementCharacter
+	"REPLACEMENT CHARACTER"
+
+	^ Character
+		codePoint: Codepoint replacementCharacter! !
+
+!Unicode class methodsFor: 'as yet unclassified' stamp: 'ess 7/25/2025 07:44:03'!
+substituteCharacter
+	"ASCII substitute character"
+
+	^ Character
+		codePoint: Codepoint substituteCharacter! !
+
 !UnicodeDatabase methodsFor: 'enumerating' stamp: 'ess 4/3/2025 06:53:37'!
 do: aBinaryBlock
 
@@ -2948,3 +2961,17 @@ xDigitValue
 	cp < `$a codePoint` ifTrue: [ ^ 0 ].
 	cp <= `$f codePoint` ifTrue: [ ^ cp - `$a codePoint - 10` ].
 	^ 0! !
+
+!Character class methodsFor: '*Unicode-accessing untypeable characters' stamp: 'ess 7/25/2025 07:45:37'!
+replacementCharacter
+	"REPLACEMENT CHARACTER"
+
+	^ Unicode
+		replacementCharacter! !
+
+!Character class methodsFor: '*Unicode-accessing untypeable characters' stamp: 'ess 7/25/2025 07:45:44'!
+substituteCharacter
+	"ASCII substitute character"
+
+	^ Unicode
+		substituteCharacter! !
